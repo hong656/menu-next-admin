@@ -90,7 +90,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="flex h-screen w-64 flex-col bg-white border-r border-gray-200">
+    <aside className="flex h-screen w-64 flex-col bg-white border-r border-gray-400">
       <nav className="flex-1 space-y-2 p-4 text-sm font-medium">
         <ul>
           {sidebarNavItems.map((item, index) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import axios from 'axios';
 
 interface AuthContextType {
@@ -25,22 +25,76 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Decode a JWT and return payload (handles base64url)
+function decodeJwtPayload<T = unknown>(token: string): T | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const json = atob(padded);
+    return JSON.parse(json) as T;
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ username: string; email: string; role?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const logoutTimerRef = useRef<number | null>(null);
+
+  const clearLogoutTimer = useCallback(() => {
+    if (logoutTimerRef.current) {
+      window.clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
+  }, []);
+
+  const logout = useCallback(() => {
+    clearLogoutTimer();
+    localStorage.removeItem('authToken');
+    delete axios.defaults.headers.common['Authorization'];
+    setIsAuthenticated(false);
+    setUser(null);
+  }, [clearLogoutTimer]);
+
+  const scheduleAutoLogout = useCallback((token: string) => {
+    const payload = decodeJwtPayload<{ exp?: number }>(token);
+    if (!payload || !payload.exp) return;
+    const expirationMs = payload.exp * 1000;
+    const logoutAtMs = expirationMs + 60_000;
+    const delayMs = logoutAtMs - Date.now();
+
+    clearLogoutTimer();
+
+    if (delayMs <= 0) {
+      logout();
+      return;
+    }
+
+    logoutTimerRef.current = window.setTimeout(() => {
+      logout();
+    }, delayMs);
+  }, [clearLogoutTimer, logout]);
 
   useEffect(() => {
-    // Check if user is already logged in (e.g., from localStorage or token)
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Set default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setIsAuthenticated(true);
-      // You could also validate the token here by making an API call
+      const payload = decodeJwtPayload<{ sub?: string; username?: string; email?: string }>(token);
+      const usernameFromToken = payload?.username || payload?.sub || 'user';
+      const emailFromToken = payload?.email || '';
+      setUser((prev) => prev ?? { username: String(usernameFromToken), email: String(emailFromToken) });
+      scheduleAutoLogout(token);
     }
     setLoading(false);
-  }, []);
+
+    return () => clearLogoutTimer();
+  }, [scheduleAutoLogout, clearLogoutTimer]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
@@ -62,8 +116,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser({
           username: response.data.username,
           email: response.data.email,
-          role: 'user' // You can add role logic if needed
+          role: 'user'
         });
+        scheduleAutoLogout(response.data.token);
         return true;
       }
       return false;
@@ -73,13 +128,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    delete axios.defaults.headers.common['Authorization'];
-    setIsAuthenticated(false);
-    setUser(null);
   };
 
   const value = {

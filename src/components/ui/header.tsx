@@ -27,7 +27,7 @@ const Header = () => {
   });
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-6">
+    <header className="flex h-16 items-center justify-between border-b border-gray-400 bg-white px-6">
       <nav className="flex items-center text-sm font-medium text-gray-500">
         <Book className="mx-2 h-4 w-4" />
         <Link href="/" className="hover:text-gray-700">

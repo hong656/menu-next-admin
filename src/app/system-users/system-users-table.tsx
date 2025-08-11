@@ -5,6 +5,7 @@ import axios from 'axios';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import {
   ChevronLeft,
   ChevronsLeft,
@@ -12,7 +13,11 @@ import {
   ChevronsRight,
   Ellipsis,
   BadgePlus,
-  CirclePlus
+  CirclePlus,
+  CheckCircle2,
+  XCircle, 
+  Trash2, 
+  HelpCircle
 } from 'lucide-react';
 
 type SystemUser = {
@@ -56,6 +61,39 @@ export default function SystemUsersTable(): React.ReactElement {
     };
     fetchUsers();
   }, []);
+
+  const statusConfig = {
+    active: {
+      text: 'ACTIVE',
+      classes: 'bg-green-500/30 text-emerald-700 ring-1 ring-emerald-700',
+      icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-700 text-emerald-700" />,
+    },
+    inactive: {
+      text: 'INACTIVE',
+      classes: 'bg-yellow-500/30 text-yellow-700 ring-1 ring-yellow-700',
+      icon: <XCircle className="h-3.5 w-3.5 fill-yellow-700 text-yellow-900" />,
+    },
+  };
+
+  type UserStatusBadgeProps = {
+    enabled: boolean;
+  };
+
+  const UserStatusBadge = ({ enabled }: UserStatusBadgeProps) => {
+    const currentStatus = enabled ? statusConfig.active : statusConfig.inactive;
+  
+    return (
+      <Badge
+        className={cn(
+          'inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold transition-colors duration-200',
+          currentStatus.classes
+        )}
+      >
+        {currentStatus.icon}
+        <span>{currentStatus.text}</span>
+      </Badge>
+    );
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -119,7 +157,7 @@ export default function SystemUsersTable(): React.ReactElement {
             ))}
           </select>
         </div>
-        <Button variant="outline"  className='border-black text-grey-700'><BadgePlus /> New</Button>
+        <Button variant="outline"  className='cursor-pointer border-black text-grey-700'><BadgePlus /> New</Button>
       </div>
 
       <div className="rounded-md border border-gray-800">
@@ -167,20 +205,10 @@ export default function SystemUsersTable(): React.ReactElement {
                 </TableCell>
                 <TableCell>{user.role ?? 'N/A'}</TableCell>
                 <TableCell>
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium',
-                      user.enabled
-                        ? 'bg-emerald-900/40 text-emerald-300 ring-1 ring-emerald-700'
-                        : 'bg-gray-800 text-gray-300 ring-1 ring-gray-700'
-                    )}
-                  >
-                    <span className={cn('h-2 w-2 rounded-full', user.enabled ? 'bg-emerald-400' : 'bg-gray-400')} />
-                    {user.enabled ? 'ACTIVE' : 'INACTIVE'}
-                  </span>
+                  <UserStatusBadge enabled={user.enabled} />
                 </TableCell>
-                <TableCell className="text-right">
-                  <Ellipsis className='cursor-pointer w-4 h-4' />
+                <TableCell className="text-right ">
+                  <Ellipsis className='cursor-pointer w-5 h-5' />
                 </TableCell>
               </TableRow>
             ))}
@@ -189,7 +217,7 @@ export default function SystemUsersTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between text-sm text-gray-400">
-        <div>
+        <div className='text-gray-700 font-bold'>
           {filtered.length === 0
             ? '0 of 0 row(s) selected.'
             : `${pageRows.length} of ${filtered.length} row(s) shown.`}
