@@ -1,10 +1,11 @@
 import ProtectedRoute from '@/components/auth/protected-route';
+import SystemUsersTable from './system-users-table';
 
-export default function MenuItems() {
+export default function SystemUsersPage() {
   return (
     <ProtectedRoute>
       <div className="space-y-6">
-        <h1>Hello world</h1>
+        <SystemUsersTable />
       </div>
     </ProtectedRoute>
   );
