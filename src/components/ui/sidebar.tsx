@@ -8,6 +8,8 @@ import {
   ChevronDown,
   ChevronRight,
   LucideIcon,
+  ShoppingBasket,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link'; // Use Next.js Link component for client-side navigation
@@ -27,6 +29,20 @@ type NavItem = {
 
 const sidebarNavItems: NavItem[] = [
   {
+    label: 'Dashboard',
+    icon: Home,
+    href: '/',
+  },
+  {
+    label: 'Menu Management',
+    icon: ShoppingBasket,
+    subItems: [
+      { href: '/menu-items', label: 'Menu Items' },
+      { href: '#', label: 'Categories' },
+      { href: '#', label: 'Pricing' },
+    ],
+  },
+  {
     label: 'Authentication',
     icon: Lock,
     subItems: [
@@ -37,7 +53,10 @@ const sidebarNavItems: NavItem[] = [
   {
     label: 'Platform Settings',
     icon: Settings,
-    href: '#',
+    subItems: [
+      { href: '#', label: 'Web Colors Theme' },
+      { href: '#', label: 'General Settings' },
+    ],
   },
   {
     label: 'App Management',

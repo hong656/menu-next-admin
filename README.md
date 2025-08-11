@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Restaurant Menu Admin Panel
+
+A Next.js admin panel for restaurant menu management with authentication.
+
+## Features
+
+- 🔐 **Authentication System**: Login/logout functionality with protected routes
+- 🎨 **Modern UI**: Built with Tailwind CSS and shadcn/ui components
+- 📱 **Responsive Design**: Works on desktop and mobile devices
+- 🚀 **Fast**: Built with Next.js 15 and React 19
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Authentication
+
+### Login Credentials
+**Note**: Authentication is handled by your external API service at `http://localhost:8080`. The credentials and validation logic are managed by your authentication service, not this frontend application.
+
+### How it Works
+
+1. **Protected Routes**: All pages except `/login` require authentication
+2. **Token Storage**: JWT tokens are stored in localStorage
+3. **Auto-redirect**: Unauthenticated users are automatically redirected to login
+4. **Persistent Sessions**: Login state persists across page refreshes
+
+### API Endpoints
+
+- `POST http://localhost:8080/api/auth/signin` - External authentication endpoint
+  - Headers: `Accept: application/json`
+  - Body: `{ "username": "string", "password": "string" }`
+  - Returns: `{ "username": "string", "email": "string", "token": "string", "type": "Bearer" }`
+
+**Note**: This app connects to an external authentication service running on `localhost:8080`. Make sure your authentication service is running before testing the login functionality.
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/login/          # Login API endpoint
+│   ├── login/              # Login page
+│   ├── layout.tsx          # Root layout with auth provider
+│   └── page.tsx            # Protected home page
+├── components/
+│   ├── auth/               # Authentication components
+│   │   ├── conditional-layout.tsx
+│   │   └── protected-route.tsx
+│   └── ui/                 # UI components
+│       ├── button.tsx
+│       ├── header.tsx
+│       └── sidebar.tsx
+└── lib/
+    └── auth-context.tsx    # Authentication context
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Technologies Used
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Next.js 15** - React framework
+- **React 19** - UI library
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn/ui** - UI component library
+- **Lucide React** - Icon library
+- **Axios** - HTTP client
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Customization
 
-## Learn More
+### Adding New Protected Pages
 
-To learn more about Next.js, take a look at the following resources:
+1. Create your page component
+2. Wrap it with `<ProtectedRoute>` component
+3. The page will automatically require authentication
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Styling
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Modify `tailwind.config.js` for theme customization
+- Update component styles in individual component files
+- Use Tailwind CSS classes for rapid styling
 
-## Deploy on Vercel
+## Security Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+⚠️ **Important**: This is a demonstration project with mock authentication. In production:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Implement proper JWT validation
+- Use secure password hashing
+- Add rate limiting
+- Implement proper session management
+- Use environment variables for sensitive data
+- Add CSRF protection
+
+## Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
