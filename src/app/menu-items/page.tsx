@@ -5,12 +5,12 @@ export default function MenuItems() {
     <ProtectedRoute>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Menu Items</h1>
-          <p className="text-gray-600 mt-2">Manage your restaurant&apos;s menu items</p>
+          <h1 className="text-3xl font-bold text-foreground">Menu Items</h1>
+          <p className="text-muted-foreground mt-2">Manage your restaurant&apos;s menu items</p>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <p className="text-gray-600">Menu items management interface will go here.</p>
+        <div className="bg-card text-card-foreground p-6 rounded-lg shadow-sm border border-border">
+          <p className="text-muted-foreground">Menu items management interface will go here.</p>
         </div>
       </div>
     </ProtectedRoute>

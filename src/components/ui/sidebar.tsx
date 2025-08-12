@@ -33,8 +33,10 @@ const sidebarNavItems: NavItem[] = [
   {
     label: 'Dashboard',
     icon: Home,
-    href: '/',
     group: 'Overview',
+    subItems: [
+      { href: '/', label: 'Home' },
+    ],
   },
   {
     label: 'Menu Management',
@@ -90,7 +92,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="flex h-screen w-64 flex-col bg-white border-r border-gray-400">
+    <aside className="flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-colors duration-500">
       <nav className="flex-1 space-y-2 p-4 text-sm font-medium">
         <ul>
           {sidebarNavItems.map((item, index) => {
@@ -99,78 +101,86 @@ const Sidebar = () => {
               pathname === sub.href || pathname.startsWith(`${sub.href}/`)
             ) ?? false;
 
-            const isOpen = openItems.includes(item.label) || hasActiveSubItem;
             const isTopLevelActive = !!item.href && (pathname === item.href || pathname.startsWith(`${item.href}/`));
+            const isOpen = openItems.includes(item.label); // allow closing even if a subpath is active
+            const sectionId = `sidebar-section-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
 
             return (
               <li key={item.label} className="py-1">
                 {item.group && item.group !== prevGroup && (
-                  <div className="px-3 pt-4 pb-2 text-xs font-semibold uppercase text-gray-400 tracking-wide">
+                  <div className="px-3 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {item.group}
                   </div>
                 )}
                 {item.subItems ? (
                   <>
                     <button
+                      id={`${sectionId}-button`}
+                      aria-expanded={isOpen}
+                      aria-controls={sectionId}
                       onClick={() => toggleItem(item.label)}
                       className={cn(
-                        'cursor-pointer flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-gray-100 transition-colors',
-                        hasActiveSubItem && 'bg-blue-50'
+                        'cursor-pointer flex w-full items-center justify-between rounded-md px-3 py-2 text-left transition-colors duration-500 hover:bg-accent hover:text-accent-foreground',
+                        hasActiveSubItem && 'bg-primary/10'
                       )}
                     >
                       <div className="flex items-center">
-                        <item.icon className={cn('mr-3 h-5 w-5', hasActiveSubItem ? 'text-blue-600' : 'text-gray-500')} />
-                        <span className={cn('text-gray-700', hasActiveSubItem && 'text-blue-700 font-semibold')}>{item.label}</span>
+                        <item.icon className={cn('mr-3 h-5 w-5', hasActiveSubItem ? 'text-primary' : 'text-muted-foreground')} />
+                        <span className={cn(hasActiveSubItem && 'text-primary font-semibold')}>{item.label}</span>
                       </div>
                       <ChevronDown
                         className={cn(
-                          'h-4 w-4 transform transition-transform duration-500 text-gray-500',
-                          isOpen && 'rotate-0',
-                          !isOpen && '-rotate-90'
+                          'h-4 w-4 transform duration-300 text-muted-foreground',
+                          isOpen ? 'rotate-0' : '-rotate-90'
                         )}
                       />
                     </button>
                     <div
+                      id={sectionId}
+                      role="region"
+                      aria-labelledby={`${sectionId}-button`}
                       className={cn(
-                        'overflow-hidden transition-all duration-500 ease-in-out',
-                        isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                        'grid transition-[grid-template-rows] duration-300 ease-in-out',
+                        isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                       )}
                     >
-                      <ul className="pl-6 pt-2 space-y-1">
-                        {item.subItems.map((subItem) => {
-                          const isSubActive = pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
-                          return (
-                            <li key={subItem.label}>
-                              <Link
-                                href={subItem.href}
-                                className={cn(
-                                  'block rounded-md px-3 py-2 transition-colors',
-                                  isSubActive
-                                    ? 'bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                                )}
-                              >
-                                {subItem.label}
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
+                      <div className="min-h-0 overflow-hidden">
+                        <ul className="pl-6 pt-2 space-y-1">
+                          {item.subItems.map((subItem) => {
+                            const isSubActive = pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
+                            return (
+                              <li key={subItem.label}>
+                                <Link
+                                  href={subItem.href}
+                                  className={cn(
+                                    'block rounded-md px-3 py-2 transition-colors duration-500',
+                                    isSubActive
+                                      ? 'bg-primary/10 text-primary font-semibold'
+                                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                  )}
+                                >
+                                  {subItem.label}
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
                     </div>
                   </>
                 ) : (
                   <Link
                     href={item.href || '#'}
                     className={cn(
-                      'flex items-center justify-between rounded-md px-3 py-2 transition-colors',
-                      isTopLevelActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                      'flex items-center justify-between rounded-md px-3 py-2 transition-colors duration-500',
+                      isTopLevelActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
                     <div className="flex items-center">
-                      <item.icon className={cn('mr-3 h-5 w-5', isTopLevelActive ? 'text-blue-600' : 'text-gray-500')} />
+                      <item.icon className={cn('mr-3 h-5 w-5', isTopLevelActive ? 'text-primary' : 'text-muted-foreground')} />
                       <span className={cn(isTopLevelActive && 'font-semibold')}>{item.label}</span>
                     </div>
-                    <ChevronRight className={cn('h-4 w-4', isTopLevelActive ? 'text-blue-600' : 'text-gray-500')} />
+                    <ChevronRight className={cn('h-4 w-4', isTopLevelActive ? 'text-primary' : 'text-muted-foreground')} />
                   </Link>
                 )}
               </li>

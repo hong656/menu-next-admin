@@ -89,13 +89,13 @@ export default function SystemUsersTable(): React.ReactElement {
   const statusConfig = {
     active: {
       text: 'ACTIVE',
-      classes: 'bg-green-500/30 text-emerald-700 ring-1 ring-emerald-700',
-      icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-700 text-emerald-700" />,
+      classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
+      icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
     },
     inactive: {
       text: 'INACTIVE',
-      classes: 'bg-yellow-500/30 text-yellow-700 ring-1 ring-yellow-700',
-      icon: <XCircle className="h-3.5 w-3.5 fill-yellow-700 text-yellow-900" />,
+      classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
+      icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
     },
   } as const;
 
@@ -223,8 +223,8 @@ export default function SystemUsersTable(): React.ReactElement {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-700">Users</h1>
-          <p className="mt-1 text-sm text-gray-400">Here a list of users!</p>
+          <h1 className="text-2xl font-bold">Users</h1>
+          <p className="mt-1 text-sm">Here a list of users!</p>
         </div>
       </div>
 
@@ -234,7 +234,7 @@ export default function SystemUsersTable(): React.ReactElement {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter by name or email..."
-            className="mr-3 w-64 rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="mr-3 w-64 rounded-md border border-gray-700 px-3 py-2 text-smplaceholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
           <select
             value={status}
@@ -244,10 +244,10 @@ export default function SystemUsersTable(): React.ReactElement {
                 setStatus(val);
               }
             }}
-            className="rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="rounded-md border border-gray-700 px-3 py-2 text-smfocus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-gray-900 text-gray-100">
+              <option key={opt.value} value={opt.value} className="bg-gray-900">
                 {opt.label}
               </option>
             ))}
@@ -258,7 +258,7 @@ export default function SystemUsersTable(): React.ReactElement {
         </Button>
       </div>
 
-      <div className="rounded-md border border-gray-300">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -273,21 +273,21 @@ export default function SystemUsersTable(): React.ReactElement {
           <TableBody>
             {state === 'loading' && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-gray-400">
+                <TableCell colSpan={6} className="py-10 text-center">
                   Loading users...
                 </TableCell>
               </TableRow>
             )}
             {state === 'error' && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-red-400">
+                <TableCell colSpan={6} className="py-10 text-center">
                   Failed to load users.
                 </TableCell>
               </TableRow>
             )}
             {state === 'success' && pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-gray-400">
+                <TableCell colSpan={6} className="py-10 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -296,10 +296,10 @@ export default function SystemUsersTable(): React.ReactElement {
               <TableRow key={user.id}>
                 <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
                 <TableCell>
-                  <span className="text-md text-gray-700">{user.fullName || user.username}</span>
+                  <span className="text-md">{user.fullName || user.username}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-md text-gray-700">{user.email}</span>
+                  <span className="text-md">{user.email}</span>
                 </TableCell>
                 <TableCell>{user.role ?? 'N/A'}</TableCell>
                 <TableCell>
@@ -329,53 +329,53 @@ export default function SystemUsersTable(): React.ReactElement {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-400">
-        <div className='text-gray-700 font-bold'>
+      <div className="flex items-center justify-between text-sm">
+        <div className='font-bold'>
           {filtered.length === 0
             ? '0 of 0 row(s) selected.'
             : `${pageRows.length} of ${filtered.length} row(s) shown.`}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className='text-gray-700 font-bold'>Rows per page</span>
+            <span className='font-bold'>Rows per page</span>
             <select
               value={rowsPerPage}
               onChange={(e) => setRowsPerPage(Number(e.target.value))}
-              className="rounded-md border border-gray-700 bg-transparent px-2 py-1 text-gray-700 focus:outline-none"
+              className="rounded-md border border-gray-700 bg-transparent px-2 py-1focus:outline-none"
             >
               {[5, 10, 20, 50].map((n) => (
-                <option key={n} value={n} className="bg-gray-900 text-gray-100">{n}</option>
+                <option key={n} value={n} className="bg-gray-900">{n}</option>
               ))}
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <span className='text-gray-700 font-bold'>
+            <span className='font-bold'>
               Page {currentPage} of {pageCount}
             </span>
             <div className="ml-2 inline-flex rounded-md space-x-3">
               <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1 text-gray-700"
+                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
                 onClick={() => setPage(1)}
                 disabled={currentPage === 1}
               >
                 <ChevronsLeft className='w-4 h-4' />
               </button>
               <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1 text-gray-700"
+                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className='w-4 h-4' />
               </button>
               <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1 text-gray-700"
+                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
                 disabled={currentPage === pageCount}
               >
                 <ChevronRight className='w-4 h-4' />
               </button>
               <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1 text-gray-700"
+                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
                 onClick={() => setPage(pageCount)}
                 disabled={currentPage === pageCount}
               >

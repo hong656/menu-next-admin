@@ -14,7 +14,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-border"></div>
       </div>
     );
   }
@@ -24,7 +24,7 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background text-foreground">
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Header />

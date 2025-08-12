@@ -28,7 +28,8 @@ export default function LoginPage() {
       } else {
         setError('Invalid username or password');
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Login error:', error);
       setError('An error occurred during login');
     } finally {
       setIsLoading(false);
