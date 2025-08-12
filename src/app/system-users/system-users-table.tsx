@@ -31,8 +31,8 @@ type SystemUser = {
   username: string;
   email: string;
   fullName: string | null;
-  role: string | null;
-  enabled: boolean;
+  role: number | null;
+  status: number | null; // 1 = active, 2 = inactive
 };
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
@@ -43,11 +43,23 @@ const STATUS_OPTIONS = [
   { label: 'Inactive', value: 'inactive' },
 ] as const;
 
-const ROLE_OPTIONS = [
-  { label: 'Admin', value: 'ADMIN' },
-  { label: 'Menu Manager', value: 'MENU_MANAGER' },
-  { label: 'Order Manager', value: 'ORDER_MANAGER' },
+const ROLE_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: 'Tester', value: '1' },
+  { label: 'User', value: '2' },
+  { label: 'Admin', value: '3' },
 ];
+
+const ROLE_LABEL: Record<number, string> = {
+  1: 'Tester',
+  2: 'User',
+  3: 'Admin',
+};
+
+function getRoleLabel(role: number | string | null | undefined): string {
+  if (role === null || role === undefined || role === '') return 'N/A';
+  const num = typeof role === 'string' ? Number(role) : role;
+  return ROLE_LABEL[num as 1 | 2 | 3] ?? 'N/A';
+}
 
 export default function SystemUsersTable(): React.ReactElement {
   const [users, setUsers] = useState<SystemUser[]>([]);
@@ -85,7 +97,7 @@ export default function SystemUsersTable(): React.ReactElement {
     }
   }, [editDialogOpen]);
 
-  //this is for active and incative
+  //this is for active and inactive badge
   const statusConfig = {
     active: {
       text: 'ACTIVE',
@@ -100,11 +112,11 @@ export default function SystemUsersTable(): React.ReactElement {
   } as const;
 
   type UserStatusBadgeProps = {
-    enabled: boolean;
+    status: number | null;
   };
 
-  const UserStatusBadge = ({ enabled }: UserStatusBadgeProps) => {
-    const currentStatus = enabled ? statusConfig.active : statusConfig.inactive;
+  const UserStatusBadge = ({ status }: UserStatusBadgeProps) => {
+    const currentStatus = status === 1 ? statusConfig.active : statusConfig.inactive;
   
     return (
       <Badge
@@ -130,8 +142,8 @@ export default function SystemUsersTable(): React.ReactElement {
       });
     }
     if (status !== 'all') {
-      const shouldBeEnabled = status === 'active';
-      list = list.filter((u) => Boolean(u.enabled) === shouldBeEnabled);
+      const shouldBeActive = status === 'active';
+      list = list.filter((u) => (u.status ?? 2) === (shouldBeActive ? 1 : 2));
     }
     return list;
   }, [users, query, status]);
@@ -152,6 +164,10 @@ export default function SystemUsersTable(): React.ReactElement {
     { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
     { name: 'password', label: 'Password', type: 'password', required: true, placeholder: '••••••••' },
     { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS },
+    { name: 'status', label: 'Status', type: 'select', required: true, options: [
+      { label: 'Active', value: '1' },
+      { label: 'Inactive', value: '2' }
+    ] },
   ];
 
   // this is for edit user
@@ -160,14 +176,21 @@ export default function SystemUsersTable(): React.ReactElement {
     { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
     { name: 'password', label: 'Password', type: 'password', placeholder: '••••••••' },
     { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS },
-    { name: 'enabled', label: 'Status', type: 'select', required: true, options: [
-      { label: 'Active', value: 'true' },
-      { label: 'Inactive', value: 'false' }
+    { name: 'status', label: 'Status', type: 'select', required: true, options: [
+      { label: 'Active', value: '1' },
+      { label: 'Inactive', value: '2' }
     ] },
   ];
 
   const handleCreate = async (values: Record<string, string>) => {
-    await axios.post('http://localhost:8080/api/auth/signup', values, {
+    const createData = {
+      username: values.username,
+      email: values.email,
+      password: values.password,
+      role: Number(values.role),
+      status: Number(values.status),
+    };
+    await axios.post('http://localhost:8080/api/auth/signup', createData, {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -199,9 +222,9 @@ export default function SystemUsersTable(): React.ReactElement {
       const updateData = {
         username: values.username,
         email: values.email,
-        role: values.role,
+        role: Number(values.role),
         password: values.password,
-        enabled: values.enabled === 'true',
+        status: Number(values.status),
       };
       
       await axios.put(`http://localhost:8080/api/users/${editingUser.id}`, updateData, {
@@ -301,9 +324,9 @@ export default function SystemUsersTable(): React.ReactElement {
                 <TableCell>
                   <span className="text-md">{user.email}</span>
                 </TableCell>
-                <TableCell>{user.role ?? 'N/A'}</TableCell>
+                <TableCell>{getRoleLabel(user.role)}</TableCell>
                 <TableCell>
-                  <UserStatusBadge enabled={user.enabled} />
+                  <UserStatusBadge status={user.status} />
                 </TableCell>
                 <TableCell className="text-right ">
                   <DropdownMenu>
@@ -408,8 +431,8 @@ export default function SystemUsersTable(): React.ReactElement {
         initialValues={editingUser ? {
           username: editingUser.username,
           email: editingUser.email,
-          role: editingUser.role || '',
-          enabled: editingUser.enabled.toString(),
+          role: editingUser.role != null ? String(editingUser.role) : '',
+          status: editingUser.status != null ? String(editingUser.status) : '1',
         } : undefined}
         onSubmit={handleUpdate}
       />
