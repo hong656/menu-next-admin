@@ -49,8 +49,6 @@ const ROLE_OPTIONS = [
   { label: 'Order Manager', value: 'ORDER_MANAGER' },
 ];
 
-
-
 export default function SystemUsersTable(): React.ReactElement {
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [state, setState] = useState<FetchState>('idle');
@@ -156,10 +154,11 @@ export default function SystemUsersTable(): React.ReactElement {
     { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS },
   ];
 
-  // this is for edit user (without password)
+  // this is for edit user
   const editFields: FieldConfig[] = [
     { name: 'username', label: 'Username', required: true, placeholder: 'example' },
     { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
+    { name: 'password', label: 'Password', type: 'password', placeholder: '••••••••' },
     { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS },
     { name: 'enabled', label: 'Status', type: 'select', required: true, options: [
       { label: 'Active', value: 'true' },
@@ -201,6 +200,7 @@ export default function SystemUsersTable(): React.ReactElement {
         username: values.username,
         email: values.email,
         role: values.role,
+        password: values.password,
         enabled: values.enabled === 'true',
       };
       
