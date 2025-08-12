@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { FormDialog, FieldConfig } from '@/components/ui/form-dialog';
 import {
   ChevronLeft,
   ChevronsLeft,
@@ -13,12 +14,17 @@ import {
   ChevronsRight,
   Ellipsis,
   BadgePlus,
-  CirclePlus,
   CheckCircle2,
-  XCircle, 
-  Trash2, 
-  HelpCircle
+  XCircle,
 } from 'lucide-react';
+
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type SystemUser = {
   id: number;
@@ -37,6 +43,14 @@ const STATUS_OPTIONS = [
   { label: 'Inactive', value: 'inactive' },
 ] as const;
 
+const ROLE_OPTIONS = [
+  { label: 'Admin', value: 'ADMIN' },
+  { label: 'Menu Manager', value: 'MENU_MANAGER' },
+  { label: 'Order Manager', value: 'ORDER_MANAGER' },
+];
+
+
+
 export default function SystemUsersTable(): React.ReactElement {
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [state, setState] = useState<FetchState>('idle');
@@ -44,24 +58,36 @@ export default function SystemUsersTable(): React.ReactElement {
   const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]['value']>('all');
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setState('loading');
-      try {
-        const { data } = await axios.get<SystemUser[]>('http://localhost:8080/api/users', {
-          headers: { Accept: 'application/json' },
-        });
-        setUsers(Array.isArray(data) ? data : []);
-        setState('success');
-      } catch (err) {
-        console.error(err);
-        setState('error');
-      }
-    };
-    fetchUsers();
+  //this is call users
+  const fetchUsers = useCallback(async () => {
+    setState('loading');
+    try {
+      const { data } = await axios.get<SystemUser[]>('http://localhost:8080/api/users', {
+        headers: { Accept: 'application/json' },
+      });
+      setUsers(Array.isArray(data) ? data : []);
+      setState('success');
+    } catch (err) {
+      console.error(err);
+      setState('error');
+    }
   }, []);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    if (!editDialogOpen) {
+      setEditingUser(null);
+    }
+  }, [editDialogOpen]);
+
+  //this is for active and incative
   const statusConfig = {
     active: {
       text: 'ACTIVE',
@@ -73,7 +99,7 @@ export default function SystemUsersTable(): React.ReactElement {
       classes: 'bg-yellow-500/30 text-yellow-700 ring-1 ring-yellow-700',
       icon: <XCircle className="h-3.5 w-3.5 fill-yellow-700 text-yellow-900" />,
     },
-  };
+  } as const;
 
   type UserStatusBadgeProps = {
     enabled: boolean;
@@ -85,7 +111,7 @@ export default function SystemUsersTable(): React.ReactElement {
     return (
       <Badge
         className={cn(
-          'inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold transition-colors duration-200',
+          'inline-flex items-center gap-1 px-3 py-1 text-xm font-semibold transition-colors duration-200',
           currentStatus.classes
         )}
       >
@@ -119,9 +145,79 @@ export default function SystemUsersTable(): React.ReactElement {
   const pageRows = filtered.slice(start, end);
 
   useEffect(() => {
-    // Reset to first page when filters change
     setPage(1);
   }, [query, status, rowsPerPage]);
+
+  // this is for create user
+  const fields: FieldConfig[] = [
+    { name: 'username', label: 'Username', required: true, placeholder: 'example' },
+    { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
+    { name: 'password', label: 'Password', type: 'password', required: true, placeholder: '••••••••' },
+    { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS },
+  ];
+
+  // this is for edit user (without password)
+  const editFields: FieldConfig[] = [
+    { name: 'username', label: 'Username', required: true, placeholder: 'example' },
+    { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
+    { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS },
+    { name: 'enabled', label: 'Status', type: 'select', required: true, options: [
+      { label: 'Active', value: 'true' },
+      { label: 'Inactive', value: 'false' }
+    ] },
+  ];
+
+  const handleCreate = async (values: Record<string, string>) => {
+    await axios.post('http://localhost:8080/api/auth/signup', values, {
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    });
+    await fetchUsers();
+  };
+
+  const handleEdit = (user: SystemUser) => {
+    setEditingUser(user);
+    setEditDialogOpen(true);
+  };
+
+  const handleDelete = async (userId: number) => {
+    if (confirm('Are you sure you want to delete this user?')) {
+      try {
+        await axios.delete(`http://localhost:8080/api/users/${userId}`);
+        setUsers(prev => prev.filter(user => user.id !== userId));
+      } catch (error) {
+        console.error('Error deleting user:', error);
+      }
+    }
+  };
+
+  const handleUpdate = async (values: Record<string, string>) => {
+    if (!editingUser) return;
+    
+    try {
+      const updateData = {
+        username: values.username,
+        email: values.email,
+        role: values.role,
+        enabled: values.enabled === 'true',
+      };
+      
+      await axios.put(`http://localhost:8080/api/users/${editingUser.id}`, updateData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+      
+      await fetchUsers();
+      setEditDialogOpen(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -157,10 +253,12 @@ export default function SystemUsersTable(): React.ReactElement {
             ))}
           </select>
         </div>
-        <Button variant="outline"  className='cursor-pointer border-black text-grey-700'><BadgePlus /> New</Button>
+        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
+          <BadgePlus /> New
+        </Button>
       </div>
 
-      <div className="rounded-md border border-gray-800">
+      <div className="rounded-md border border-gray-300">
         <Table>
           <TableHeader>
             <TableRow>
@@ -208,7 +306,22 @@ export default function SystemUsersTable(): React.ReactElement {
                   <UserStatusBadge enabled={user.enabled} />
                 </TableCell>
                 <TableCell className="text-right ">
-                  <Ellipsis className='cursor-pointer w-5 h-5' />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Ellipsis className='cursor-pointer w-5 h-5' />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(user)}>
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        variant="destructive" 
+                        onClick={() => handleDelete(user.id)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
@@ -272,8 +385,34 @@ export default function SystemUsersTable(): React.ReactElement {
           </div>
         </div>
       </div>
+
+      <FormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title="Create User"
+        description="Create a new system user"
+        fields={fields}
+        submitLabel="Create"
+        cancelLabel="Cancel"
+        onSubmit={handleCreate}
+      />
+
+      <FormDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        title="Edit User"
+        description="Update user information"
+        fields={editFields}
+        submitLabel="Update"
+        cancelLabel="Cancel"
+        initialValues={editingUser ? {
+          username: editingUser.username,
+          email: editingUser.email,
+          role: editingUser.role || '',
+          enabled: editingUser.enabled.toString(),
+        } : undefined}
+        onSubmit={handleUpdate}
+      />
     </div>
   );
 }
-
-
