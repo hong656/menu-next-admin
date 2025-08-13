@@ -16,6 +16,7 @@ import {
   BadgePlus,
   CheckCircle2,
   XCircle,
+  Image,
 } from 'lucide-react';
 
 
@@ -268,7 +269,7 @@ export default function MenuItemTable(): React.ReactElement {
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">#</TableHead>
-              <TableHead className="text-base">Image</TableHead>
+              <TableHead className="text-base w-20">Image</TableHead>
               <TableHead className="text-base">Name</TableHead>
               <TableHead className="text-base">Description</TableHead>
               <TableHead className="text-base">Price</TableHead>
@@ -301,7 +302,7 @@ export default function MenuItemTable(): React.ReactElement {
             {state !== 'loading' && pageRows.map((item, idx) => (
               <TableRow key={item.id}>
                 <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
-                <TableCell>
+                <TableCell className="w-20">
 
                 </TableCell>
                 <TableCell>
