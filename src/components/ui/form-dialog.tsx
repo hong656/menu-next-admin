@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export type FieldConfig = {
   name: string;
   label: string;
-  type?: "text" | "email" | "password" | "select";
+  type?: "text" | "email" | "password" | "select" | "file";
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
@@ -85,6 +85,7 @@ export function FormDialog({
       await onSubmit(values);
       handleOpenChange(false);
     } catch (err: unknown) {
+      console.log(err);
       setError("Failed to submit. Please try again.");
     } finally {
       setSubmitting(false);
@@ -121,6 +122,30 @@ export function FormDialog({
                     </option>
                   ))}
                 </select>
+              ) : field.type === "file" ? (
+                <div className="space-y-2">
+                  <input
+                    id={field.name}
+                    name={field.name}
+                    type="file"
+                    accept="image/*"
+                    required={field.required}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // Create a temporary URL for the file
+                        const fileUrl = URL.createObjectURL(file);
+                        handleChange(field.name, fileUrl);
+                      }
+                    }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  {values[field.name] && (
+                    <div className="mt-2">
+                      
+                    </div>
+                  )}
+                </div>
               ) : (
                 <Input
                   id={field.name}
