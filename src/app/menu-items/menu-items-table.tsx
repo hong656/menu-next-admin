@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
+import NextImage from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -16,9 +17,8 @@ import {
   BadgePlus,
   CheckCircle2,
   XCircle,
-  Image,
+  Image as ImageIcon,
 } from 'lucide-react';
-
 
 import {
   DropdownMenu,
@@ -32,7 +32,7 @@ type MenuItem = {
   name: string;
   description: string;
   priceCents: number;
-  imageUrl: string;
+  imageUrl?: string | null;
   available: boolean;
 };
 
@@ -44,7 +44,13 @@ const STATUS_OPTIONS = [
   { label: 'Unavailable', value: 'unavailable' },
 ] as const;
 
+const isUrlValid = (url: string | null | undefined): url is string => {
+    return typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
+}
+
 export default function MenuItemTable(): React.ReactElement {
+  const BACKEND_URL = 'http://localhost:8080';
+
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
@@ -143,7 +149,7 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'imageUrl', label: 'Image URL', required: true, placeholder: 'http://example.com/image.jpg' },
+    { name: 'imageUrl', label: 'Image URL', required: false, placeholder: '/images/your-image.jpg' },
     { name: 'available', label: 'Available', type: 'select', required: true, options: [
       { label: 'Available', value: 'true' },
       { label: 'Unavailable', value: 'false' }
@@ -154,7 +160,7 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'imageUrl', label: 'Image URL', required: true, placeholder: 'http://example.com/image.jpg' },
+    { name: 'imageUrl', label: 'Image URL', required: false, placeholder: '/images/your-image.jpg' },
     { name: 'available', label: 'Available', type: 'select', required: true, options: [
       { label: 'Available', value: 'true' },
       { label: 'Unavailable', value: 'false' }
@@ -269,7 +275,7 @@ export default function MenuItemTable(): React.ReactElement {
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">#</TableHead>
-              <TableHead className="text-base w-20">Image</TableHead>
+              <TableHead className="text-base w-[150px]">Image</TableHead>
               <TableHead className="text-base">Name</TableHead>
               <TableHead className="text-base">Description</TableHead>
               <TableHead className="text-base">Price</TableHead>
@@ -299,40 +305,58 @@ export default function MenuItemTable(): React.ReactElement {
                 </TableCell>
               </TableRow>
             )}
-            {state !== 'loading' && pageRows.map((item, idx) => (
-              <TableRow key={item.id}>
-                <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
-                <TableCell className="w-20">
+            {state !== 'loading' && pageRows.map((item, idx) => {
+              // --- CONSTRUCT THE FULL, ABSOLUTE URL ---
+              const absoluteImageUrl = item.imageUrl && item.imageUrl.startsWith('/')
+                ? `${BACKEND_URL}${item.imageUrl}`
+                : item.imageUrl;
 
-                </TableCell>
-                <TableCell>
-                  <span className="text-md font-medium">{item.name}</span>
-                </TableCell>
-                <TableCell className="max-w-xs truncate">{item.description}</TableCell>
-                <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
-                <TableCell>
-                  <AvailabilityBadge available={item.available} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Ellipsis className='cursor-pointer w-5 h-5' />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(item)}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        variant="destructive" 
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+              return (
+                <TableRow key={item.id}>
+                  <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
+                  <TableCell>
+                    {isUrlValid(absoluteImageUrl) ? (
+                      <NextImage
+                        src={absoluteImageUrl}
+                        alt={item.name}
+                        width={50}
+                        height={50}
+                        className="aspect-square rounded-md object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-[50px] w-[50px] items-center justify-center rounded-md bg-gray-800 text-gray-500">
+                        <ImageIcon className="h-10 w-10" />
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-md font-medium">{item.name}</span>
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate">{item.description}</TableCell>
+                  <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
+                  <TableCell>
+                    <AvailabilityBadge available={item.available} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Ellipsis className='cursor-pointer w-5 h-5' />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(item)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              )}
+            )}
           </TableBody>
         </Table>
       </div>
@@ -417,7 +441,7 @@ export default function MenuItemTable(): React.ReactElement {
           name: editingItem.name,
           description: editingItem.description,
           priceCents: String(editingItem.priceCents),
-          imageUrl: editingItem.imageUrl,
+          imageUrl: editingItem.imageUrl || '',
           available: String(editingItem.available),
         } : undefined}
         onSubmit={handleUpdate}
