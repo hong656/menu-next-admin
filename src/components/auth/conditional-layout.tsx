@@ -26,9 +26,9 @@ export default function ConditionalLayout({ children }: ConditionalLayoutProps) 
   return (
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col ml-64 pt-6">
         <Header />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 pt-12 p-6">{children}</main>
       </div>
     </div>
   );

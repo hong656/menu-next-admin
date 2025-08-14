@@ -37,9 +37,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             <ConditionalLayout>
-              <div className="ml-64">
-                {children}
-              </div>
+              {children}
             </ConditionalLayout>
           </AuthProvider>
         </ThemeProvider>

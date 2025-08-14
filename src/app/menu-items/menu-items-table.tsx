@@ -19,6 +19,8 @@ import {
   XCircle,
   Image as ImageIcon,
 } from 'lucide-react';
+import { CreateDialog } from './create-dialog';
+
 
 import {
   DropdownMenu,
@@ -47,6 +49,14 @@ const STATUS_OPTIONS = [
 const isUrlValid = (url: string | null | undefined): url is string => {
     return typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
 }
+
+type FormValues = {
+  name: string;
+  description: string;
+  priceCents: number | string; // Can be string from form input
+  available: boolean | string; // Can be string from form input
+  image?: File | string; // Can be a File object (new upload) or a string (existing URL)
+};
 
 export default function MenuItemTable(): React.ReactElement {
   const BACKEND_URL = 'http://localhost:8080';
@@ -149,7 +159,7 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'imageUrl', label: 'Image URL', required: false, placeholder: '/images/your-image.jpg' },
+    { name: 'image', label: 'Image URL', type: 'file', required: false, placeholder: '/images/your-image.jpg' },
     { name: 'available', label: 'Available', type: 'select', required: true, options: [
       { label: 'Available', value: 'true' },
       { label: 'Unavailable', value: 'false' }
@@ -160,28 +170,39 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'imageUrl', label: 'Image URL', required: false, placeholder: '/images/your-image.jpg' },
+    { name: 'image', label: 'Image URL', type: 'file', required: false, placeholder: '/images/your-image.jpg' },
     { name: 'available', label: 'Available', type: 'select', required: true, options: [
       { label: 'Available', value: 'true' },
       { label: 'Unavailable', value: 'false' }
     ] },
   ];
 
-  const handleCreate = async (values: Record<string, string>) => {
-    const createData = {
-      name: values.name,
-      description: values.description,
-      priceCents: Number(values.priceCents),
-      imageUrl: values.imageUrl,
-      available: values.available === 'true',
-    };
-    await axios.post('http://localhost:8080/api/menu-items', createData, {
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-    });
-    await fetchMenuItems();
+  const handleCreate = async (values: FormValues) => {
+    const formData = new FormData();
+
+    formData.append('name', values.name);
+    formData.append('description', values.description);
+    // Ensure priceCents is sent as a string, backend can parse it
+    formData.append('priceCents', String(values.priceCents)); 
+    // Available is a boolean, convert to string for FormData
+    formData.append('available', String(values.available));
+
+    // The key change: check if 'image' is a File object.
+    // This assumes your FormDialog correctly passes the File object.
+    if (values.image instanceof File) {
+      formData.append('image', values.image);
+    }
+
+    try {
+      await axios.post(`http://localhost:8080/api/menu-items`, formData, {
+        // Axios will automatically set the 'Content-Type' to 'multipart/form-data'
+        // when you pass a FormData object.
+      });
+      await fetchMenuItems();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating menu item:', error);
+    }
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -200,24 +221,28 @@ export default function MenuItemTable(): React.ReactElement {
     }
   };
 
-  const handleUpdate = async (values: Record<string, string>) => {
+  const handleUpdate = async (values: FormValues) => {
     if (!editingItem) return;
+
+    const formData = new FormData();
+
+    // Append all fields to FormData, just like in handleCreate
+    formData.append('name', values.name);
+    formData.append('description', values.description);
+    formData.append('priceCents', String(values.priceCents));
+    formData.append('available', String(values.available === 'true' || values.available === true));
+
+    // If a new file is uploaded, add it to the form data.
+    // If not, the backend should be designed to not update the image if the 'image' field is missing.
+    if (values.image instanceof File) {
+      formData.append('image', values.image);
+    }
     
     try {
-      const updateData = {
-        name: values.name,
-        description: values.description,
-        priceCents: Number(values.priceCents),
-        imageUrl: values.imageUrl,
-        available: values.available === 'true',
-      };
-      
-      await axios.put(`http://localhost:8080/api/menu-items/${editingItem.id}`, updateData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-      });
+      // Use PUT for update and send FormData.
+      // Note: Some backends might expect a POST request with a _method="PUT" field for FormData updates.
+      // If PUT doesn't work, try axios.post with the _method field.
+      await axios.put(`http://localhost:8080/api/menu-items/${editingItem.id}`, formData);
       
       await fetchMenuItems();
       setEditDialogOpen(false);
@@ -265,8 +290,9 @@ export default function MenuItemTable(): React.ReactElement {
             ))}
           </select>
         </div>
+        <CreateDialog/>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> New Item
+          <BadgePlus /> New
         </Button>
       </div>
 
@@ -426,7 +452,7 @@ export default function MenuItemTable(): React.ReactElement {
         fields={fields}
         submitLabel="Create"
         cancelLabel="Cancel"
-        onSubmit={handleCreate}
+        onSubmit={(values) => handleCreate(values as FormValues)}
       />
 
       <FormDialog
@@ -440,11 +466,12 @@ export default function MenuItemTable(): React.ReactElement {
         initialValues={editingItem ? {
           name: editingItem.name,
           description: editingItem.description,
-          priceCents: String(editingItem.priceCents),
-          imageUrl: editingItem.imageUrl || '',
+          priceCents: String(editingItem.priceCents), // Keep as string for form consistency
+          // Do not pass the imageUrl to a file input field
+          // The FormDialog should handle displaying the current image separately
           available: String(editingItem.available),
         } : undefined}
-        onSubmit={handleUpdate}
+        onSubmit={(values) => handleUpdate(values as FormValues)}
       />
     </div>
   );
