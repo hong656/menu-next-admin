@@ -109,6 +109,11 @@ export default function SystemUsersTable(): React.ReactElement {
       classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
       icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
     },
+    deleted: {
+      text: 'DELETED',
+      classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
+      icon: <XCircle className="h-3.5 w-3.5 fill-red-400 text-red-700" />,
+    },
   } as const;
 
   type UserStatusBadgeProps = {
@@ -116,7 +121,16 @@ export default function SystemUsersTable(): React.ReactElement {
   };
 
   const UserStatusBadge = ({ status }: UserStatusBadgeProps) => {
-    const currentStatus = status === 1 ? statusConfig.active : statusConfig.inactive;
+      let currentStatus;
+      if (status === 1) {
+        currentStatus = statusConfig.active;
+      } else if (status === 2) {
+        currentStatus = statusConfig.inactive;
+      } else if (status === 3) {
+        currentStatus = statusConfig.deleted;
+      } else {
+        currentStatus = statusConfig.inactive;
+      }
   
     return (
       <Badge
@@ -207,8 +221,16 @@ export default function SystemUsersTable(): React.ReactElement {
   const handleDelete = async (userId: number) => {
     if (confirm('Are you sure you want to delete this user?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/users/${userId}`);
-        setUsers(prev => prev.filter(user => user.id !== userId));
+          const deleteData = {
+            status: 3,
+          };
+        await axios.patch(`http://localhost:8080/api/users/delete/${userId}`, deleteData, {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        });
+        await fetchUsers();
       } catch (error) {
         console.error('Error deleting user:', error);
       }

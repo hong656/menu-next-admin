@@ -416,14 +416,12 @@ export default function MenuItemTable(): React.ReactElement {
         title="Create Menu Item"
         description="Create a new menu item"
         fields={fields}
-        // ADD THE LAYOUT PROP to tell the component where to put the fields
         layout={{
           fileFields: ['image'],
           dataFields: ['name', 'description', 'priceCents', 'available']
         }}
         submitLabel="Create"
         cancelLabel="Cancel"
-        // FIX THE ONSUBMIT PROP: No more type casting. Just pass the function directly.
         onSubmit={handleCreate}
       />
 

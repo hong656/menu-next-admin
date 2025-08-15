@@ -304,10 +304,26 @@ export function FileFormDialog({
             <div className="md:col-span-2 space-y-4">{layout.dataFields.map(fieldName => renderField(fieldName))}</div>
           </div>
           <DialogFooter className="mt-8 pt-6 border-t border-gray-700">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing} className="text-white border-gray-600 hover:bg-gray-700">{cancelLabel}</Button>
-            <Button type="submit" disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
-              {isProcessing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait...</>) : (submitLabel)}
-            </Button>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={submitting}
+              >
+                {cancelLabel}
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Please wait
+                  </>
+                ) : (
+                  submitLabel
+                )}
+              </Button>
+            </DialogFooter>
           </DialogFooter>
         </form>
       </DialogContent>

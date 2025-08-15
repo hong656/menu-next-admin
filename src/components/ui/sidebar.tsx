@@ -36,6 +36,7 @@ const sidebarNavItems: NavItem[] = [
     group: 'Overview',
     subItems: [
       { href: '/', label: 'Home' },
+      { href: '/dashboard', label: 'Dashboard' },
     ],
   },
   {
