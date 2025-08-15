@@ -81,7 +81,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="fixed flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-colors duration-500">
+    <aside className="fixed z-40 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-colors duration-500">
       <nav className="flex-1 space-y-2 p-4 text-sm font-medium">
         <ul>
           {sidebarNavItems.map((item, index) => {

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { FormDialog, FieldConfig } from '@/components/ui/form-dialog';
+import { FileFormDialog, FieldConfig } from '@/components/ui/file-form-dialog';
 import {
   ChevronLeft,
   ChevronsLeft,
@@ -19,7 +19,6 @@ import {
   XCircle,
   Image as ImageIcon,
 } from 'lucide-react';
-import { CreateDialog } from './create-dialog';
 
 
 import {
@@ -177,27 +176,16 @@ export default function MenuItemTable(): React.ReactElement {
     ] },
   ];
 
-  const handleCreate = async (values: FormValues) => {
-    const formData = new FormData();
-
-    formData.append('name', values.name);
-    formData.append('description', values.description);
-    formData.append('priceCents', String(values.priceCents));
-    formData.append('available', String(values.available));
-
-    if (values.image instanceof File) {
-      formData.append('image', values.image);
-    }
-
-    try {
-      await axios.post(`http://localhost:8080/api/menu-items`, formData, {
-      });
-      await fetchMenuItems();
-      setDialogOpen(false);
-    } catch (error) {
-      console.error('Error creating menu item:', error);
-    }
-  };
+  const handleCreate = async (formData: FormData) => {
+  try {
+    // The formData is already built by the dialog component!
+    await axios.post(`http://localhost:8080/api/menu-items`, formData);
+    await fetchMenuItems();
+    setDialogOpen(false);
+  } catch (error) {
+    console.error('Error creating menu item:', error);
+  }
+};
 
   const handleEdit = (item: MenuItem) => {
     setEditingItem(item);
@@ -215,30 +203,20 @@ export default function MenuItemTable(): React.ReactElement {
     }
   };
 
-  const handleUpdate = async (values: FormValues) => {
-    if (!editingItem) return;
-
-    const formData = new FormData();
-
-    formData.append('name', values.name);
-    formData.append('description', values.description);
-    formData.append('priceCents', String(values.priceCents));
-    formData.append('available', String(values.available === 'true' || values.available === true));
-
-    if (values.image instanceof File) {
-      formData.append('image', values.image);
-    }
+  const handleUpdate = async (formData: FormData) => {
+  if (!editingItem) return;
+  try {
+    // The dialog has already prepared the formData object for you.
+    // It will contain the new File if one was selected, or the old string value.
+    await axios.put(`http://localhost:8080/api/menu-items/${editingItem.id}`, formData);
     
-    try {
-      await axios.put(`http://localhost:8080/api/menu-items/${editingItem.id}`, formData);
-      
-      await fetchMenuItems();
-      setEditDialogOpen(false);
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Error updating menu item:', error);
-    }
-  };
+    await fetchMenuItems();
+    setEditDialogOpen(false);
+    setEditingItem(null);
+  } catch (error) {
+    console.error('Error updating menu item:', error);
+  }
+};
 
   const formatPrice = (priceCents: number) => {
     return `$${(priceCents / 100).toFixed(2)}`;
@@ -278,7 +256,6 @@ export default function MenuItemTable(): React.ReactElement {
             ))}
           </select>
         </div>
-        <CreateDialog/>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
           <BadgePlus /> New
         </Button>
@@ -433,32 +410,45 @@ export default function MenuItemTable(): React.ReactElement {
         </div>
       </div>
 
-      <FormDialog
+      <FileFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title="Create Menu Item"
         description="Create a new menu item"
         fields={fields}
+        // ADD THE LAYOUT PROP to tell the component where to put the fields
+        layout={{
+          fileFields: ['image'],
+          dataFields: ['name', 'description', 'priceCents', 'available']
+        }}
         submitLabel="Create"
         cancelLabel="Cancel"
-        onSubmit={(values) => handleCreate(values as FormValues)}
+        // FIX THE ONSUBMIT PROP: No more type casting. Just pass the function directly.
+        onSubmit={handleCreate}
       />
 
-      <FormDialog
+      <FileFormDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         title="Edit Menu Item"
         description="Update menu item information"
         fields={editFields}
+        // ADD THE LAYOUT PROP here as well
+        layout={{
+          fileFields: ['image'],
+          dataFields: ['name', 'description', 'priceCents', 'available']
+        }}
         submitLabel="Update"
         cancelLabel="Cancel"
         initialValues={editingItem ? {
-          name: editingItem.name,
-          description: editingItem.description,
-          priceCents: String(editingItem.priceCents),
-          available: String(editingItem.available),
-        } : undefined}
-        onSubmit={(values) => handleUpdate(values as FormValues)}
+    name: editingItem.name,
+    description: editingItem.description,
+    priceCents: String(editingItem.priceCents),
+    available: String(editingItem.available),
+    // FIX: Provide a fallback empty string if imageUrl is null or undefined
+    image: editingItem.imageUrl ?? '', 
+  } : undefined}
+  onSubmit={handleUpdate}
       />
     </div>
   );
