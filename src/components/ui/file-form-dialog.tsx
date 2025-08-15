@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Loader2, UploadCloud } from "lucide-react";
+import { Loader2, UploadCloud, X } from "lucide-react";
 
 // Configuration for each field in the form
 export type FieldConfig = {
@@ -31,7 +31,7 @@ export type FieldConfig = {
   placeholder?: string;
   required?: boolean;
   options?: Array<{ label: string; value: string }>;
-  className?: string; // Allow custom styling for a field container
+  className?: string;
 };
 
 // Props for the entire dialog component
@@ -41,12 +41,11 @@ export type FileFormDialogProps = {
   title: string;
   description?: string;
   fields: FieldConfig[];
-  // Use a more structured layout definition
   layout: {
-    fileFields: string[]; // Names of fields to be rendered in the file column
-    dataFields: string[]; // Names of fields for the main data column
+    fileFields: string[];
+    dataFields: string[];
   };
-  initialValues?: Record<string, string>; // Initial values are always strings (e.g., image URL)
+  initialValues?: Record<string, string>;
   isLoading?: boolean;
   submitLabel?: string;
   cancelLabel?: string;
@@ -66,10 +65,10 @@ export function FileFormDialog({
   cancelLabel = "Cancel",
   onSubmit,
 }: FileFormDialogProps) {
-  // State to hold form values, which can be strings or File objects
   const [values, setValues] = useState<Record<string, string | File>>({});
-  // State specifically for image preview URLs
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  // --- CHANGE 1: State for file validation errors ---
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   const fieldsByName = useMemo(() =>
@@ -78,12 +77,17 @@ export function FileFormDialog({
       return acc;
     }, {} as Record<string, FieldConfig>), [fields]);
 
+  // --- CHANGE 2: Function to clear all local state ---
+  const resetForm = () => {
+    setValues({});
+    setPreviewUrls({});
+    setFileErrors({});
+  };
 
-  // Effect to initialize form state when `initialValues` change
   useEffect(() => {
-    if (initialValues) {
+    // When opening for editing, populate the form
+    if (open && initialValues) {
       setValues(initialValues);
-      // Also set preview URLs for any file fields that have an initial URL
       const previews: Record<string, string> = {};
       layout.fileFields.forEach(fieldName => {
         if (initialValues[fieldName]) {
@@ -91,10 +95,14 @@ export function FileFormDialog({
         }
       });
       setPreviewUrls(previews);
+    } 
+    // When the dialog is closed, always reset the form
+    else if (!open) {
+      resetForm();
     }
-  }, [initialValues, layout.fileFields]);
+  }, [open, initialValues, layout.fileFields]);
 
-  // Cleanup effect for blob URLs to prevent memory leaks
+
   useEffect(() => {
     return () => {
       Object.values(previewUrls).forEach(url => {
@@ -113,14 +121,27 @@ export function FileFormDialog({
     const { name } = e.target;
     const file = e.target.files?.[0];
 
+    // --- CHANGE 3: File Type Validation Logic ---
     if (file) {
-      // Store the actual File object
+      // Check if the file type is an image
+      if (!file.type.startsWith("image/")) {
+        setFileErrors(prev => ({ ...prev, [name]: "Invalid file type. Please select an image." }));
+        // Clear the input value so the user can select again
+        e.target.value = ""; 
+        return;
+      }
+
+      // Clear any previous error for this field
+      setFileErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+      
       handleValueChange(name, file);
 
-      // Create and store a temporary URL for preview
       const newPreviewUrl = URL.createObjectURL(file);
       setPreviewUrls(prev => {
-        // Revoke the old blob URL if it exists
         if (prev[name] && prev[name].startsWith("blob:")) {
             URL.revokeObjectURL(prev[name]);
         }
@@ -129,26 +150,44 @@ export function FileFormDialog({
     }
   };
 
+  const handleRemoveFile = (fieldName: string) => {
+    setValues(prev => ({...prev, [fieldName]: ""}));
+    setFileErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+    });
+    setPreviewUrls(prev => {
+        const newPreviews = { ...prev };
+        const urlToRevoke = newPreviews[fieldName];
+        if (urlToRevoke && urlToRevoke.startsWith("blob:")) {
+            URL.revokeObjectURL(urlToRevoke);
+        }
+        delete newPreviews[fieldName];
+        return newPreviews;
+    });
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
     const formData = new FormData();
+    // --- CHANGE 4: Corrected FormData append logic ---
     for (const key in values) {
       const value = values[key];
-      if (value !== undefined && value !== null) {
-        // FormData can handle string and File directly
+      // Only append if it's a File or a non-empty string
+      if (value instanceof File || (typeof value === 'string' && value !== '')) {
         formData.append(key, value);
       }
     }
 
     try {
       await onSubmit(formData);
-      onOpenChange(false); // Close dialog on success
+      onOpenChange(false); // Close dialog on success (will trigger reset via useEffect)
     } catch (error) {
       console.error("Submission failed:", error);
-      // Optionally, set an error state to show in the UI
     } finally {
       setSubmitting(false);
     }
@@ -158,7 +197,6 @@ export function FileFormDialog({
     const field = fieldsByName[fieldName];
     if (!field) return null;
     
-    // File input with preview
     if (field.type === 'file') {
       return (
         <div key={field.name} className={cn("space-y-2", field.className)}>
@@ -168,19 +206,33 @@ export function FileFormDialog({
             className="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
           >
             {previewUrls[field.name] ? (
-              <Image
-                src={previewUrls[field.name]}
-                alt={`${field.label} Preview`}
-                layout="fill"
-                objectFit="cover"
-                className="rounded-lg"
-              />
+              <>
+                <Image
+                    src={previewUrls[field.name]}
+                    alt={`${field.label} Preview`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="rounded-lg object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-6 w-6 rounded-full z-10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemoveFile(field.name);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Remove image</span>
+                </Button>
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center text-center">
                 <UploadCloud className="w-10 h-10 mb-3 text-gray-400" />
-                <p className="mb-2 text-sm text-gray-400">
-                  <span className="font-semibold">Click to browse</span>
-                </p>
+                <p className="mb-2 text-sm text-gray-400"><span className="font-semibold">Click to browse</span></p>
                 <p className="text-xs text-gray-500">Supports JPG, PNG, etc.</p>
               </div>
             )}
@@ -191,14 +243,17 @@ export function FileFormDialog({
               className="hidden"
               accept="image/*"
               onChange={handleFileChange}
-              required={field.required}
+              value=""
             />
           </label>
+          {/* --- CHANGE 5: Display validation error message --- */}
+          {fileErrors[field.name] && (
+            <p className="text-sm text-red-500">{fileErrors[field.name]}</p>
+          )}
         </div>
       );
     }
 
-    // Select (Dropdown) input
     if (field.type === 'select') {
       return (
          <div key={field.name} className={cn("space-y-2", field.className)}>
@@ -208,20 +263,15 @@ export function FileFormDialog({
                 value={values[field.name] as string ?? ""}
                 required={field.required}
             >
-              <SelectTrigger className="w-full mt-1 bg-gray-800 border-gray-700">
-                <SelectValue placeholder={field.placeholder} />
-              </SelectTrigger>
+              <SelectTrigger className="w-full mt-1 bg-gray-800 border-gray-700"><SelectValue placeholder={field.placeholder} /></SelectTrigger>
               <SelectContent className="bg-gray-800 text-white border-gray-700">
-                {field.options?.map(option => (
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                ))}
+                {field.options?.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}
               </SelectContent>
             </Select>
          </div>
       )
     }
 
-    // Default to text-based inputs
     return (
         <div key={field.name} className={cn("space-y-2", field.className)}>
             <Label htmlFor={field.name}>{field.label} {field.required && <span className="text-red-500">*</span>}</Label>
@@ -250,36 +300,13 @@ export function FileFormDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-4">
-            {/* Left Column: File Fields */}
-            <div className="md:col-span-1 space-y-4">
-              {layout.fileFields.map(fieldName => renderField(fieldName))}
-            </div>
-
-            {/* Right Column: Data Fields */}
-            <div className="md:col-span-2 space-y-4">
-              {layout.dataFields.map(fieldName => renderField(fieldName))}
-            </div>
+            <div className="md:col-span-1 space-y-4">{layout.fileFields.map(fieldName => renderField(fieldName))}</div>
+            <div className="md:col-span-2 space-y-4">{layout.dataFields.map(fieldName => renderField(fieldName))}</div>
           </div>
-
           <DialogFooter className="mt-8 pt-6 border-t border-gray-700">
-            <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isProcessing}
-            className="text-white border-gray-600 hover:bg-gray-700"
-            >
-            {cancelLabel} {/* <-- CHANGE THIS FROM "Cancel" */}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing} className="text-white border-gray-600 hover:bg-gray-700">{cancelLabel}</Button>
             <Button type="submit" disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Please wait...
-                </>
-              ) : (
-                submitLabel
-              )}
+              {isProcessing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait...</>) : (submitLabel)}
             </Button>
           </DialogFooter>
         </form>

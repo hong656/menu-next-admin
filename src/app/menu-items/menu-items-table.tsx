@@ -158,7 +158,7 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'image', label: 'Image URL', type: 'file', required: false, placeholder: '/images/your-image.jpg' },
+    { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
     { name: 'available', label: 'Available', type: 'select', required: true, options: [
       { label: 'Available', value: 'true' },
       { label: 'Unavailable', value: 'false' }
@@ -169,7 +169,7 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'image', label: 'Image URL', type: 'file', required: false, placeholder: '/images/your-image.jpg' },
+    { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
     { name: 'available', label: 'Available', type: 'select', required: true, options: [
       { label: 'Available', value: 'true' },
       { label: 'Unavailable', value: 'false' }
