@@ -63,12 +63,6 @@ export function CreateDialog() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // Here you would handle the form submission,
-    // including uploading the avatarFile and sending formData.
-    console.log('Form Data:', formData);
-    console.log('Avatar File:', avatarFile);
-    // You would typically close the dialog on success
-    // For now, we can just log it.
   };
 
   return (

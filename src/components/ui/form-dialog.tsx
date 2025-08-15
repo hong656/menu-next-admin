@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Import shadcn/ui select components
 import { cn } from "@/lib/utils";
+import { Loader2 } from 'lucide-react';
 
 export type FieldConfig = {
   name: string;
@@ -33,6 +41,7 @@ export type FormDialogProps = {
   cancelLabel?: string;
   className?: string;
   initialValues?: Record<string, string>;
+  isLoading?: boolean;
   onSubmit: (values: Record<string, string>) => Promise<void> | void;
 };
 
@@ -46,6 +55,7 @@ export function FormDialog({
   cancelLabel = "Cancel",
   className,
   initialValues,
+  isLoading,
   onSubmit,
 }: FormDialogProps): React.ReactElement {
   const defaultValues = useMemo(() => {
@@ -62,6 +72,10 @@ export function FormDialog({
   const [values, setValues] = useState<Record<string, string>>(initialFormValues);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    setValues(initialFormValues);
+  }, [initialFormValues]);
 
   const handleChange = (name: string, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -107,21 +121,23 @@ export function FormDialog({
                 {field.label}
               </label>
               {field.type === "select" ? (
-                <select
-                  id={field.name}
+                <Select
                   name={field.name}
                   required={field.required}
                   value={values[field.name] ?? ""}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  onValueChange={(value) => handleChange(field.name, value)}
                 >
-                  <option value="">Select {field.label}</option>
-                  {field.options?.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={`Select ${field.label}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options?.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : field.type === "file" ? (
                 <div className="space-y-2">
                   <input
@@ -142,7 +158,7 @@ export function FormDialog({
                   />
                   {values[field.name] && (
                     <div className="mt-2">
-                      
+
                     </div>
                   )}
                 </div>
@@ -175,8 +191,15 @@ export function FormDialog({
             >
               {cancelLabel}
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Submitting..." : submitLabel}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                submitLabel
+              )}
             </Button>
           </DialogFooter>
         </form>

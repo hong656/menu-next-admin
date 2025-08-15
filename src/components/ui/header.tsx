@@ -29,7 +29,7 @@ const Header = () => {
   });
 
   return (
-    <header className="fixed top-0 left-64 right-0 flex h-16 items-center justify-between border-b border-border bg-background px-6 transition-colors duration-500">
+    <header className="fixed z-40 top-0 left-64 right-0 flex h-16 items-center justify-between border-b border-border bg-background px-6 transition-colors duration-500">
       <nav className="flex items-center text-sm font-medium text-muted-foreground">
         <Book className="mx-2 h-4 w-4" />
         <Link href="/" className="hover:text-foreground">

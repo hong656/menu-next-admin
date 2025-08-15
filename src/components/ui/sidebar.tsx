@@ -39,13 +39,13 @@ const sidebarNavItems: NavItem[] = [
     ],
   },
   {
-    label: 'Menu Management',
+    label: 'Store Management',
     icon: ShoppingBasket,
     group: 'Product',
     subItems: [
       { href: '/menu-items', label: 'Menu Items' },
-      { href: '#', label: 'Categories' },
-      { href: '#', label: 'Pricing' },
+      { href: '/tables', label: 'Tables' },
+      { href: '/orders', label: 'Orders' },
     ],
   },
   {
@@ -58,23 +58,12 @@ const sidebarNavItems: NavItem[] = [
     ],
   },
   {
-    label: 'Platform Settings',
+    label: 'Settings',
     icon: Settings,
     group: 'Core Administration',
     subItems: [
       { href: '#', label: 'Web Colors Theme' },
       { href: '#', label: 'General Settings' },
-    ],
-  },
-  {
-    label: 'App Management',
-    icon: AppWindow,
-    group: 'Core Administration',
-    subItems: [
-      { href: '#', label: 'App Banner' },
-      { href: '#', label: 'App Configuration' },
-      { href: '#', label: 'Push Notifications Log' },
-      { href: '#', label: 'App Download Links' },
     ],
   },
 ];

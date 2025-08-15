@@ -182,21 +182,15 @@ export default function MenuItemTable(): React.ReactElement {
 
     formData.append('name', values.name);
     formData.append('description', values.description);
-    // Ensure priceCents is sent as a string, backend can parse it
-    formData.append('priceCents', String(values.priceCents)); 
-    // Available is a boolean, convert to string for FormData
+    formData.append('priceCents', String(values.priceCents));
     formData.append('available', String(values.available));
 
-    // The key change: check if 'image' is a File object.
-    // This assumes your FormDialog correctly passes the File object.
     if (values.image instanceof File) {
       formData.append('image', values.image);
     }
 
     try {
       await axios.post(`http://localhost:8080/api/menu-items`, formData, {
-        // Axios will automatically set the 'Content-Type' to 'multipart/form-data'
-        // when you pass a FormData object.
       });
       await fetchMenuItems();
       setDialogOpen(false);
@@ -226,22 +220,16 @@ export default function MenuItemTable(): React.ReactElement {
 
     const formData = new FormData();
 
-    // Append all fields to FormData, just like in handleCreate
     formData.append('name', values.name);
     formData.append('description', values.description);
     formData.append('priceCents', String(values.priceCents));
     formData.append('available', String(values.available === 'true' || values.available === true));
 
-    // If a new file is uploaded, add it to the form data.
-    // If not, the backend should be designed to not update the image if the 'image' field is missing.
     if (values.image instanceof File) {
       formData.append('image', values.image);
     }
     
     try {
-      // Use PUT for update and send FormData.
-      // Note: Some backends might expect a POST request with a _method="PUT" field for FormData updates.
-      // If PUT doesn't work, try axios.post with the _method field.
       await axios.put(`http://localhost:8080/api/menu-items/${editingItem.id}`, formData);
       
       await fetchMenuItems();
@@ -345,12 +333,12 @@ export default function MenuItemTable(): React.ReactElement {
                       <NextImage
                         src={absoluteImageUrl}
                         alt={item.name}
-                        width={50}
-                        height={50}
+                        width={60}
+                        height={60}
                         className="aspect-square rounded-md object-cover"
                       />
                     ) : (
-                      <div className="flex h-[50px] w-[50px] items-center justify-center rounded-md bg-gray-800 text-gray-500">
+                      <div className="flex border border-3 border-gray-400 h-[60px] w-[60px] items-center justify-center rounded-md text-gray-400 bg-gray-400/20">
                         <ImageIcon className="h-10 w-10" />
                       </div>
                     )}
@@ -373,6 +361,7 @@ export default function MenuItemTable(): React.ReactElement {
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem 
+                          className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
                           onClick={() => handleDelete(item.id)}
                         >
                           Delete
@@ -466,9 +455,7 @@ export default function MenuItemTable(): React.ReactElement {
         initialValues={editingItem ? {
           name: editingItem.name,
           description: editingItem.description,
-          priceCents: String(editingItem.priceCents), // Keep as string for form consistency
-          // Do not pass the imageUrl to a file input field
-          // The FormDialog should handle displaying the current image separately
+          priceCents: String(editingItem.priceCents),
           available: String(editingItem.available),
         } : undefined}
         onSubmit={(values) => handleUpdate(values as FormValues)}
