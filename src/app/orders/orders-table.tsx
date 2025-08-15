@@ -6,16 +6,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { FormDialog, FieldConfig } from '@/components/ui/form-dialog';
 import {
   ChevronLeft,
   ChevronsLeft,
   ChevronRight,
   ChevronsRight,
   Ellipsis,
-  BadgePlus,
   CheckCircle2,
   XCircle,
+  Clock9,
   Trash2,
 } from 'lucide-react';
 import {
@@ -24,35 +23,67 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-// --- CHANGE HERE ---
-type TableEntry = {
+// --- TYPE DEFINITIONS ---
+
+// Type for a single item within an order
+type OrderItem = {
+    id: number;
+    menuItem: {
+        id: number;
+        name: string;
+        description: string;
+        priceCents: number;
+        imageUrl: string;
+        available: boolean;
+    };
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+};
+
+// Type for the table information associated with an order
+type TableInfo = {
+    id: number;
+    number: number;
+    orders: any; // Can be defined more strictly if needed
+}
+
+// Type for the main order entry, matching the example data
+type OrderEntry = {
   id: number;
-  number: number;
-  qrToken: string; // Matched to API
-  status: number; // 1: Active, 2: Inactive, 3: Delete
-  createdAt: string; // Matched to API
+  table: TableInfo;
+  status: number; // 1: Active, 2: Inactive, 3: Deleted
+  remark: string;
+  totalCents: number;
+  placedAt: string; // Matched to API
   updatedAt: string; // Matched to API
+  orderItems: OrderItem[];
 };
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
 
-// Configuration for status badges
 const statusConfig = {
-  1: { // Active
-    text: 'ACTIVE',
-    classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
-  },
-  2: { // Inactive
-    text: 'INACTIVE',
+  1: {
+    text: 'PENDING',
     classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-    icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
+    icon: <Clock9 className="!h-4 !w-4 text-yellow-400" />,
   },
-  3: { // Deleted
-    text: 'DELETED',
+  2: {
+    text: 'ACCEPTED',
+    classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
+    icon: <XCircle className="!h-4 !w-4 fill-emerald-400 text-emerald-400" />,
+  },
+  3: {
+    text: 'FINISHED',
+    classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
+    icon: <CheckCircle2 className="!h-4 !w-4 text-emerald-400" />,
+  },
+  4: {
+    text: 'DROPPED',
     classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
-    icon: <Trash2 className="h-3.5 w-3.5 fill-red-400 text-red-700" />,
+    icon: <Trash2 className="!h-4 !w-4 fill-red-400 text-red-700" />,
   },
 } as const;
 
@@ -80,48 +111,42 @@ const TableStatusBadge = ({ status }: TableStatusBadgeProps) => {
 };
 
 
-export default function TablesTable(): React.ReactElement {
-  const [tables, setTables] = useState<TableEntry[]>([]);
+export default function OrderTable(): React.ReactElement {
+  const [orders, setOrders] = useState<OrderEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<TableEntry | null>(null);
 
-  // Fetches all table entries from the API
-  const fetchTables = useCallback(async () => {
+  // Fetches all order entries from the API
+  const fetchOrders = useCallback(async () => {
     setState('loading');
     try {
-      const { data } = await axios.get<{ data: TableEntry[] }>('http://localhost:8080/api/tables', {
+      // CORRECTED: Expect a direct array of OrderEntry
+      const { data } = await axios.get<OrderEntry[]>('http://localhost:8080/api/orders', {
         headers: { Accept: 'application/json' },
       });
-      // The actual data is nested in a "data" property
-      setTables(Array.isArray(data.data) ? data.data : []);
+      
+      // CORRECTED: Use the 'data' from the response directly
+      setOrders(Array.isArray(data) ? data : []);
+      
       setState('success');
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch orders:', err);
       setState('error');
     }
   }, []);
 
   useEffect(() => {
-    fetchTables();
-  }, [fetchTables]);
+    fetchOrders();
+  }, [fetchOrders]);
 
-  useEffect(() => {
-    if (!editDialogOpen) {
-      setEditingTable(null);
-    }
-  }, [editDialogOpen]);
-
-  // Filters tables based on the search query
+  // Filters orders based on the search query (table number)
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return tables;
-    return tables.filter((t) => String(t.number).toLowerCase().includes(q));
-  }, [tables, query]);
+    if (!q) return orders;
+    return orders.filter((order) => String(order.table.number).toLowerCase().includes(q));
+  }, [orders, query]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const currentPage = Math.min(page, pageCount);
@@ -133,84 +158,15 @@ export default function TablesTable(): React.ReactElement {
     setPage(1);
   }, [query, rowsPerPage]);
 
-  // Form configuration for creating a new table
-  const createFields: FieldConfig[] = [
-    { name: 'number', label: 'Table Number', required: true, placeholder: 'e.g., 15'},
-    {
-      name: 'status',
-      label: 'Status',
-      required: true,
-      type: 'select',
-      options: [
-        { label: 'Active', value: '1' },
-        { label: 'Inactive', value: '2' },
-      ],
-    },
-  ];
-
-  // Form configuration for editing an existing table
-  const editFields: FieldConfig[] = [
-    { name: 'number', label: 'Table Number', required: true, placeholder: 'e.g., 15'},
-    {
-      name: 'status',
-      label: 'Status',
-      required: true,
-      type: 'select',
-      options: [
-        { label: 'Active', value: '1' },
-        { label: 'Inactive', value: '2' },
-      ],
-    },
-  ];
-
-  // Handler for creating a new table entry
-  const handleCreate = async (values: Record<string, string>) => {
-    try {
-      const createData = {
-        number: Number(values.number),
-        status: Number(values.status),
-      };
-      await axios.post('http://localhost:8080/api/tables', createData, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      await fetchTables(); // Refresh data after creation
-    } catch (error) {
-      console.error('Failed to create table:', error);
-    }
-  };
-
-  const handleEdit = (table: TableEntry) => {
-    setEditingTable(table); 
-    setEditDialogOpen(true);
-  };
-
-  // Handler for deleting a table entry
-  const handleDelete = async (tableId: number) => {
-    if (confirm('Are you sure you want to delete this table?')) {
+  // Handler for deleting an order entry
+  const handleDelete = async (orderId: number) => {
+    if (confirm('Are you sure you want to delete this order?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/tables/${tableId}`);
-        await fetchTables(); // Refresh data after deletion
+        await axios.delete(`http://localhost:8080/api/orders/${orderId}`);
+        await fetchOrders(); // Refresh data after deletion
       } catch (error) {
-        console.error('Error deleting table:', error);
+        console.error('Error deleting order:', error);
       }
-    }
-  };
-
-  // Handler for updating an existing table entry
-  const handleUpdate = async (values: Record<string, string>) => {
-    if (!editingTable) return;
-    try {
-      const updateData = {
-        number: Number(values.number),
-        status: Number(values.status),
-      };
-      await axios.put(`http://localhost:8080/api/tables/${editingTable.id}`, updateData, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      await fetchTables();
-      setEditDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating table:', error);
     }
   };
 
@@ -218,8 +174,8 @@ export default function TablesTable(): React.ReactElement {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Tables</h1>
-          <p className="mt-1 text-sm">A list of all the tables in the system.</p>
+          <h1 className="text-2xl font-bold">Orders</h1>
+          <p className="mt-1 text-sm">A list of all the orders in the system.</p>
         </div>
       </div>
 
@@ -230,9 +186,6 @@ export default function TablesTable(): React.ReactElement {
           placeholder="Filter by table number..."
           className="w-64 rounded-md border border-gray-700 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
         />
-        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> New
-        </Button>
       </div>
 
       <div className="rounded-md border">
@@ -240,41 +193,61 @@ export default function TablesTable(): React.ReactElement {
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">#</TableHead>
-              <TableHead className="text-base">Number</TableHead>
+              <TableHead className="text-base">Table</TableHead>
               <TableHead className="text-base">Status</TableHead>
-              <TableHead className="text-base">Created At</TableHead>
+              <TableHead className="text-base">Total Price</TableHead>
+              <TableHead className="text-base">Order Items</TableHead>
+              <TableHead className="text-base">Placed At</TableHead>
               <TableHead className="text-right text-base">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {state === 'loading' && (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center">Loading tables...</TableCell>
+                <TableCell colSpan={7} className="py-10 text-center">Loading orders...</TableCell>
               </TableRow>
             )}
             {state === 'error' && (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-red-500">Failed to load tables.</TableCell>
+                <TableCell colSpan={7} className="py-10 text-center text-red-500">Failed to load orders.</TableCell>
               </TableRow>
             )}
             {state === 'success' && pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center">No results.</TableCell>
+                <TableCell colSpan={7} className="py-10 text-center">No results found.</TableCell>
               </TableRow>
             )}
-            {state === 'success' && pageRows.map((table, idx) => (
-              <TableRow key={table.id}>
+            {state === 'success' && pageRows.map((order, idx) => (
+              <TableRow key={order.id}>
                 <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
                 <TableCell>
-                  <span className="text-md font-medium">{table.number}</span>
+                  <span className="text-md font-medium">{order.table.number}</span>
                 </TableCell>
                 <TableCell>
-                  <TableStatusBadge status={table.status} />
+                  <TableStatusBadge status={order.status} />
                 </TableCell>
                 <TableCell>
-                  {/* --- CHANGE HERE --- */}
-                  {/* Access table.createdAt instead of table.created_at */}
-                  {new Date(table.createdAt).toLocaleDateString('en-US', {
+                  <span className='text-md font-medium'>${(order.totalCents / 100).toFixed(2)}</span>
+                </TableCell>
+                <TableCell>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className='cursor-pointer'>View Items</Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[825px]">
+                        <DialogHeader>
+                            <DialogTitle>Order Items (Table {order.table.number})</DialogTitle>
+                        </DialogHeader>
+                        <div className='max-h-96 overflow-y-auto rounded-md p-4 border'>
+                            <pre className="text-sm">
+                            {JSON.stringify(order.orderItems, null, 2)}
+                            </pre>
+                        </div>
+                        </DialogContent>
+                    </Dialog>
+                </TableCell>
+                <TableCell>
+                  {new Date(order.placedAt).toLocaleDateString('en-US', {
                     year: 'numeric', month: 'long', day: 'numeric',
                   })}
                 </TableCell>
@@ -287,10 +260,9 @@ export default function TablesTable(): React.ReactElement {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(table)}>Edit</DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
-                        onClick={() => handleDelete(table.id)}
+                        onClick={() => handleDelete(order.id)}
                       >
                         Delete
                       </DropdownMenuItem>
@@ -333,33 +305,6 @@ export default function TablesTable(): React.ReactElement {
           </div>
         </div>
       </div>
-
-      {/* Dialog for Creating a New Table */}
-      <FormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        title="Create New Table"
-        description="Add a new table to the system. Only the table number is required."
-        fields={createFields}
-        submitLabel="Create"
-        onSubmit={handleCreate}
-      />
-
-      {/* Dialog for Editing an Existing Table */}
-      <FormDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        title="Edit Menu Item"
-        description="Update menu item information"
-        fields={editFields}
-        submitLabel="Update"
-        cancelLabel="Cancel"
-        initialValues={editingTable ? {
-          number: String(editingTable.number),
-          status: String(editingTable.status),
-        } : undefined}
-        onSubmit={(values) => handleUpdate(values)}
-      />
     </div>
   );
 }
