@@ -188,10 +188,11 @@ export function FormDialog({
               variant="outline"
               onClick={() => handleOpenChange(false)}
               disabled={submitting}
+              className="cursor-pointer"
             >
               {cancelLabel}
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" className="cursor-pointer" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

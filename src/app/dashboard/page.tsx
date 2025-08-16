@@ -106,17 +106,17 @@ const initialStats: OrderStats = {
 const DashboardHeader = ({ currentTime }: { currentTime: Date }) => (
     <header className="flex items-center justify-between p-4 border-b bg-teal-600">
         <div className="flex items-center space-x-3">
-            <UtensilsCrossed className="!h-6 !w-6 text-white" />
-            <h1 className="text-xl font-bold text-white">Order Dashboard</h1>
+            <UtensilsCrossed className="!h-6 !w-6" />
+            <h1 className="text-xl font-bold">Order Dashboard</h1>
         </div>
         <div className="flex items-center space-x-4 rounded-lg px-4 py-2">
-             <span className="font-medium text-white">
+             <span className="font-medium">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
-            <span className="w-px h-5 bg-gray-300"></span>
+            <span className="w-px h-5"></span>
             <div className="flex items-center space-x-2">
-                <Clock className="h-5 w-5 text-white" />
-                <span className="font-semibold text-white">
+                <Clock className="h-5 w-5" />
+                <span className="font-semibold">
                     {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                 </span>
             </div>
@@ -126,10 +126,10 @@ const DashboardHeader = ({ currentTime }: { currentTime: Date }) => (
 
 // Component for the stat cards (Pending, Total, Completed)
 const StatCard = ({ title, value }: { title: string, value: number | string }) => (
-    <Card className="bg-gray-500/35 border-gray-200 shadow-sm">
+    <Card className="border-gray-200 shadow-sm">
         <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-gray-500">{title}</CardTitle>
-            <p className="text-3xl font-bold text-gray-900">{value}</p>
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <p className="text-3xl font-bold">{value}</p>
         </CardHeader>
     </Card>
 );
@@ -137,40 +137,37 @@ const StatCard = ({ title, value }: { title: string, value: number | string }) =
 // Component for a single order item in the list on the left
 const OrderListItem = ({ order, isSelected, onSelect }: { order: Order; isSelected: boolean; onSelect: (id: string) => void; }) => {
     const statusIcons: Record<OrderStatus, React.ReactNode> = {
-        new: <Badge className="absolute top-2 right-2 bg-red-500 text-white">NEW</Badge>,
-        pending: <Soup className="h-5 w-5 text-gray-400" />,
-        completed: <CheckCircle2 className="h-5 w-5 text-green-500" />,
-        rejected: <Trash2 className="h-5 w-5 text-red-500" />,
+        new: <Badge className="absolute top-2 right-2">NEW</Badge>,
+        pending: <Soup className="h-5 w-5" />,
+        completed: <CheckCircle2 className="h-5 w-5" />,
+        rejected: <Trash2 className="h-5 w-5" />,
     };
 
     return (
         <div
             onClick={() => onSelect(order.id)}
             className={cn(
-                "p-4 rounded-lg border-l-4 cursor-pointer transition-all duration-200 relative",
+                "p-4 border rounded-lg border-l-4 cursor-pointer transition-all duration-200 relative",
                 isSelected
-                    ? "bg-teal-600 text-white shadow-lg border-teal-700"
-                    : "bg-white hover:bg-gray-50 border-transparent",
-                order.status === 'completed' && !isSelected && "bg-green-50",
-                order.status === 'rejected' && !isSelected && "bg-red-50",
+                    ? "bg-teal-600 shadow-lg border-teal-700"
+                    : "border-transparent border-gray-200",
             )}
         >
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className={cn(
                         "font-bold text-lg",
-                        isSelected ? "text-white" : "text-gray-900"
                     )}>
                         Order #{order.id}
                     </h3>
-                    <p className={cn("text-sm", isSelected ? "text-teal-100" : "text-gray-600")}>
+                    <p className={cn("text-sm", isSelected ? "" : "")}>
                         {order.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </p>
-                    <p className={cn("text-sm font-medium", isSelected ? "text-white" : "text-gray-700")}>
+                    <p className={cn("text-sm font-medium", isSelected ? "" : "")}>
                         Table: {order.table}
                     </p>
                 </div>
-                <div className={cn("absolute top-4 right-4", isSelected && "text-white")}>
+                <div className={cn("absolute top-4 right-4", isSelected && "")}>
                     {statusIcons[isSelected ? 'pending' : order.status]}
                 </div>
             </div>
@@ -182,9 +179,9 @@ const OrderListItem = ({ order, isSelected, onSelect }: { order: Order; isSelect
 const OrderDetail = ({ order, onUpdateStatus }: { order: Order | null; onUpdateStatus: (id: string, status: OrderStatus) => void; }) => {
     if (!order) {
         return (
-            <Card className="h-full flex items-center justify-center col-span-2 bg-gray-100/50">
+            <Card className="h-full flex items-center justify-center col-span-2">
                 <div className="text-center">
-                    <p className="text-lg font-medium text-gray-500">Select an order to see details</p>
+                    <p className="text-lg font-medium">Select an order to see details</p>
                 </div>
             </Card>
         );
@@ -210,7 +207,7 @@ const OrderDetail = ({ order, onUpdateStatus }: { order: Order | null; onUpdateS
                 <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-bold">Order #{order.id}</h2>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm">
                             {order.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
@@ -219,22 +216,22 @@ const OrderDetail = ({ order, onUpdateStatus }: { order: Order | null; onUpdateS
                     </div>
                 </div>
                  <div className="mt-2 text-sm">
-                    <span className="font-semibold text-gray-700">Remark: </span>
-                    <span className="text-gray-600">{order.remark || 'N/A'}</span>
+                    <span className="font-semibold">Remark: </span>
+                    <span>{order.remark || 'N/A'}</span>
                 </div>
             </CardHeader>
             <CardContent className="p-6 flex-grow overflow-y-auto">
                 <div className="space-y-4">
                     {order.items.map(item => (
-                        <div key={item.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                            <div className="w-12 h-12 bg-gray-200 rounded-md flex-shrink-0">
+                        <div key={item.id} className="flex items-center space-x-4 p-3 rounded-lg">
+                            <div className="w-12 h-12 rounded-md flex-shrink-0">
                                 {/* Image would go here: <img src={item.image} /> */}
                             </div>
                             <div className="flex-grow">
-                                <p className="font-bold text-gray-800">{item.name}</p>
-                                <p className="text-sm text-gray-500">{item.description}</p>
+                                <p className="font-bold">{item.name}</p>
+                                <p className="text-sm">{item.description}</p>
                             </div>
-                            <div className="font-semibold text-gray-700">
+                            <div className="font-semibold">
                                 x{item.quantity}
                             </div>
                         </div>
@@ -242,11 +239,11 @@ const OrderDetail = ({ order, onUpdateStatus }: { order: Order | null; onUpdateS
                 </div>
             </CardContent>
             { order.status !== 'completed' && order.status !== 'rejected' && (
-                <div className="p-4 border-t bg-gray-50">
+                <div className="p-4 border-t">
                     <div className="grid grid-cols-2 gap-3">
                         <Button
                             size="lg"
-                            className="cursor-pointer bg-teal-600 text-white font-bold py-6 text-lg"
+                            className="cursor-pointer bg-teal-600 font-bold py-6 text-lg"
                             onClick={handleAcceptOrder}
                         >
                             ACCEPT ORDER
@@ -254,7 +251,7 @@ const OrderDetail = ({ order, onUpdateStatus }: { order: Order | null; onUpdateS
                         <Button
                             size="lg"
                             variant="outline"
-                            className="bg-gray-200 hover:bg-gray-300 border-gray-300 text-red-600 font-bold py-6 text-lg"
+                            className="border-gray-300 font-bold py-6 text-lg"
                             onClick={handleRejectOrder}
                         >
                             REJECT ORDER
@@ -295,7 +292,7 @@ export default function RestaurantDashboard() {
     const selectedOrder = orders.find(order => order.id === selectedOrderId) || null;
     
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen flex flex-col">
             <DashboardHeader currentTime={currentTime} />
             <main className="flex-grow p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">

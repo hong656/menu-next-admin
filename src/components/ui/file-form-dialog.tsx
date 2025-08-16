@@ -203,7 +203,7 @@ export function FileFormDialog({
           <Label>{field.label}</Label>
           <label
             htmlFor={field.name}
-            className="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
+            className="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer transition-colors"
           >
             {previewUrls[field.name] ? (
               <>
@@ -263,8 +263,8 @@ export function FileFormDialog({
                 value={values[field.name] as string ?? ""}
                 required={field.required}
             >
-              <SelectTrigger className="w-full mt-1 bg-gray-800 border-gray-700"><SelectValue placeholder={field.placeholder} /></SelectTrigger>
-              <SelectContent className="bg-gray-800 text-white border-gray-700">
+              <SelectTrigger className="w-full mt-1 border-gray-700"><SelectValue placeholder={field.placeholder} /></SelectTrigger>
+              <SelectContent className="border-gray-700">
                 {field.options?.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}
               </SelectContent>
             </Select>
@@ -283,7 +283,7 @@ export function FileFormDialog({
                 onChange={(e) => handleValueChange(field.name, e.target.value)}
                 placeholder={field.placeholder}
                 required={field.required}
-                className="mt-1 bg-gray-800 border-gray-700"
+                className="mt-1 border-gray-700"
             />
         </div>
     );
@@ -293,7 +293,7 @@ export function FileFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl bg-[#1C1C1C] text-white border-gray-700">
+      <DialogContent className="sm:max-w-4xl border-gray-700">
         <DialogHeader>
           <DialogTitle className="text-2xl">{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
@@ -310,13 +310,14 @@ export function FileFormDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
+                className="cursor-pointer"
               >
                 {cancelLabel}
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" className="cursor-pointer " disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="curpomr-2 h-4 w-4 animate-spin" />
                     Please wait
                   </>
                 ) : (
