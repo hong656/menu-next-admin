@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, UtensilsCrossed, Soup, CheckCircle2, Trash2 } from 'lucide-react';
+import { Clock, UtensilsCrossed, Soup, CheckCircle2, Trash2, Maximize, Minimize } from 'lucide-react';
 import { cn } from "@/lib/utils"; // shadcn's utility for conditional classes
 
 // --- 1. TYPESCRIPT INTERFACES ---
@@ -41,6 +41,17 @@ interface OrderStats {
 const initialOrders: Order[] = [
   {
     id: "1434",
+    timestamp: new Date(),
+    table: "42",
+    status: "new",
+    items: [
+      { id: 'item-1', name: 'Margherita Pizza', description: 'Classic cheese and tomato', quantity: 1 },
+      { id: 'item-2', name: 'Coke', description: '330ml can', quantity: 2 },
+    ],
+    remark: "Extra napkins please."
+  },
+    {
+    id: "1438",
     timestamp: new Date(),
     table: "42",
     status: "new",
@@ -103,13 +114,21 @@ const initialStats: OrderStats = {
 // --- 3. HELPER COMPONENTS ---
 
 // Component for the Header section
-const DashboardHeader = ({ currentTime }: { currentTime: Date }) => (
+const DashboardHeader = ({
+    currentTime,
+    isFullScreen,
+    onToggleFullScreen
+}: {
+    currentTime: Date;
+    isFullScreen: boolean;
+    onToggleFullScreen: () => void;
+}) => (
     <header className="flex items-center justify-between p-4 border-b bg-teal-600">
         <div className="flex items-center space-x-3">
             <UtensilsCrossed className="!h-6 !w-6" />
             <h1 className="text-xl font-bold">Order Dashboard</h1>
         </div>
-        <div className="flex items-center space-x-4 rounded-lg px-4 py-2">
+        <div className="flex items-center space-x-2 rounded-lg px-4 py-2">
              <span className="font-medium">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
@@ -120,6 +139,20 @@ const DashboardHeader = ({ currentTime }: { currentTime: Date }) => (
                     {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                 </span>
             </div>
+            {/* Fullscreen Toggle Button */}
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleFullScreen}
+                className="h-9 w-9 hover:bg-teal-700"
+            >
+                {isFullScreen ? (
+                    <Minimize className="h-5 w-5" />
+                ) : (
+                    <Maximize className="h-5 w-5" />
+                )}
+                <span className="sr-only">Toggle Fullscreen</span>
+            </Button>
         </div>
     </header>
 );
@@ -268,11 +301,13 @@ const OrderDetail = ({ order, onUpdateStatus }: { order: Order | null; onUpdateS
 
 export default function RestaurantDashboard() {
     const [currentTime, setCurrentTime] = useState(new Date());
-    
-    // API STATE: Replace these with API calls in a real application.
     const [orders, setOrders] = useState<Order[]>(initialOrders);
     const [stats, setStats] = useState<OrderStats>(initialStats);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>('1431');
+    const [isFullScreen, setIsFullScreen] = useState(false);
+
+    // --- NEW: Create a ref for the main dashboard element ---
+    const dashboardRef = useRef<HTMLDivElement>(null);
 
     // Effect to update the clock every second
     useEffect(() => {
@@ -280,23 +315,55 @@ export default function RestaurantDashboard() {
         return () => clearInterval(timerId);
     }, []);
 
+    // --- UPDATED: Handler to toggle native fullscreen ---
+    const handleToggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            // Enter fullscreen
+            dashboardRef.current?.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        } else {
+            // Exit fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    };
+    
+    // --- NEW: Effect to sync state with browser fullscreen changes (e.g., pressing ESC) ---
+    useEffect(() => {
+        const handleFullScreenChange = () => {
+            setIsFullScreen(!!document.fullscreenElement);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullScreenChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullScreenChange);
+        };
+    }, []);
+
+
     const handleUpdateOrderStatus = (orderId: string, status: OrderStatus) => {
         setOrders(currentOrders => 
             currentOrders.map(o => o.id === orderId ? {...o, status} : o)
         );
-        // If the updated order was the selected one, unselect it to show the default message
-        // Or you might want to keep it selected, depending on desired UX
-        // setSelectedOrderId(null); 
     };
 
     const selectedOrder = orders.find(order => order.id === selectedOrderId) || null;
     
     return (
-        <div className="min-h-screen flex flex-col">
-            <DashboardHeader currentTime={currentTime} />
-            <main className="flex-grow p-6">
+        // --- UPDATED: Attach the ref to the main container ---
+        <div ref={dashboardRef} className="flex flex-col h-screen overflow-scroll hide-scrollbar">
+            <DashboardHeader 
+                currentTime={currentTime} 
+                isFullScreen={isFullScreen}
+                onToggleFullScreen={handleToggleFullScreen}
+            />
+            {/* The :fullscreen pseudo-class in Tailwind can be used for styling, e.g., :fullscreen:bg-gray-100 */}
+            <main className="flex-grow p-6 flex flex-col">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                    {/* Left Column */}
+                    {/* Left Column (ensure it can flex and scroll if needed) */}
                     <div className="flex flex-col gap-6">
                          {/* Stats Section */}
                         <div className="grid grid-cols-3 gap-4">
