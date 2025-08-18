@@ -178,7 +178,6 @@ export default function MenuItemTable(): React.ReactElement {
 
   const handleCreate = async (formData: FormData) => {
   try {
-    // The formData is already built by the dialog component!
     await axios.post(`http://localhost:8080/api/menu-items`, formData);
     await fetchMenuItems();
     setDialogOpen(false);
@@ -206,8 +205,6 @@ export default function MenuItemTable(): React.ReactElement {
   const handleUpdate = async (formData: FormData) => {
   if (!editingItem) return;
   try {
-    // The dialog has already prepared the formData object for you.
-    // It will contain the new File if one was selected, or the old string value.
     await axios.put(`http://localhost:8080/api/menu-items/${editingItem.id}`, formData);
     
     await fetchMenuItems();
@@ -328,13 +325,15 @@ export default function MenuItemTable(): React.ReactElement {
                   <TableCell>
                     <AvailabilityBadge available={item.available} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Ellipsis className='cursor-pointer w-5 h-5' />
+                        <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
+                          <Ellipsis className='h-5 w-5' />
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(item)}>
+                        <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(item)}>
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem 

@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 // --- CHANGE HERE ---
 type TableEntry = {
@@ -50,11 +51,27 @@ const statusConfig = {
     icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
   },
   3: { // Deleted
-    text: 'DELETED',
+    text: 'Delete',
     classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
     icon: <Trash2 className="h-3.5 w-3.5 fill-red-400 text-red-700" />,
   },
 } as const;
+
+interface TableStatusAction {
+  status: number;
+  label: string;
+  confirmMessage: string;
+  color: string;
+}
+
+const statusActions: TableStatusAction[] = [
+  {
+    status: 3,
+    label: statusConfig[3].text,
+    confirmMessage: 'Are you sure you want to mark this order as complete?',
+    color: 'text-red-500 focus:text-red-500 focus:bg-red-500/10',
+  },
+];
 
 type Status = keyof typeof statusConfig;
 
@@ -89,6 +106,12 @@ export default function TablesTable(): React.ReactElement {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<TableEntry | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [confirmationState, setConfirmationState] = useState<{
+    tableId: number;
+    action: TableStatusAction;
+  } | null>(null);
 
   // Fetches all table entries from the API
   const fetchTables = useCallback(async () => {
@@ -184,18 +207,28 @@ export default function TablesTable(): React.ReactElement {
     setEditDialogOpen(true);
   };
 
-  // Handler for deleting a table entry
-  const handleDelete = async (tableId: number) => {
-    if (confirm('Are you sure you want to delete this table?')) {
-      try {
-        const deleteData = {
-          status: 3,
-        };
-        await axios.patch(`http://localhost:8080/api/tables/${tableId}`, deleteData);
-        await fetchTables();
-      } catch (error) {
-        console.error('Error deleting table:', error);
-      }
+  const handleConfirmAction = async () => {
+    if (confirmationState) {
+      await updateTableStatus(confirmationState.tableId, confirmationState.action);
+      setConfirmationState(null);
+    }
+  };
+
+  const updateTableStatus = async (tableId: number, action: TableStatusAction) => {
+    setIsLoading(true);
+    try {
+      await axios.patch(`http://localhost:8080/api/tables/${tableId}`, {
+        status: action.status,
+      });
+      await fetchTables();
+      // toast.success(`Order updated to "${action.label}"`); 
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || `Failed to update order to ${action.label}`;
+      console.error(`Error updating order status to ${action.label}:`, error);
+      // toast.error(errorMessage);
+    } finally {
+      setIsLoading(false); // Re-enable buttons
     }
   };
 
@@ -245,7 +278,7 @@ export default function TablesTable(): React.ReactElement {
               <TableHead className="text-base">Number</TableHead>
               <TableHead className="text-base">Status</TableHead>
               <TableHead className="text-base">Created At</TableHead>
-              <TableHead className="text-right text-base">Actions</TableHead>
+              <TableHead className="text-base">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -280,22 +313,25 @@ export default function TablesTable(): React.ReactElement {
                     year: 'numeric', month: 'long', day: 'numeric',
                   })}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
+                      <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
                         <Ellipsis className='h-5 w-5' />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(table)}>Edit</DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
-                        onClick={() => handleDelete(table.id)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
+                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(table)}>Edit</DropdownMenuItem>
+                      {statusActions.map((action) => (
+                        <DropdownMenuItem
+                          key={action.status}
+                          className={action.color}
+                          onClick={() => setConfirmationState({ tableId: table.id, action })}
+                          disabled={isLoading}
+                        >
+                          {action.label}
+                        </DropdownMenuItem>
+                      ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -303,6 +339,13 @@ export default function TablesTable(): React.ReactElement {
             ))}
           </TableBody>
         </Table>
+        <ConfirmationDialog
+          isOpen={!!confirmationState}
+          onClose={() => setConfirmationState(null)} // Handles Cancel/Esc/Overlay click
+          onConfirm={handleConfirmAction}            // Handles the Confirm click
+          title={`Confirm Action: ${confirmationState?.action.label || ''}`}
+          description={confirmationState?.action.confirmMessage || ''}
+        />
       </div>
 
       <div className="flex items-center justify-between text-sm">

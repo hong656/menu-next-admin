@@ -389,7 +389,6 @@ export default function RestaurantDashboard() {
                         </Card>
                     </div>
 
-                    {/* Right Column */}
                     <div className="lg:col-span-2">
                        <OrderDetail order={selectedOrder} onUpdateStatus={handleUpdateOrderStatus} />
                     </div>

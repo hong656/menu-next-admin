@@ -16,8 +16,9 @@ import {
   BadgePlus,
   CheckCircle2,
   XCircle,
+  Trash2,
 } from 'lucide-react';
-
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 import {
   DropdownMenu,
@@ -61,6 +62,63 @@ function getRoleLabel(role: number | string | null | undefined): string {
   return ROLE_LABEL[num as 1 | 2 | 3] ?? 'N/A';
 }
 
+  //this is for active and inactive badge
+  const statusConfig = {
+    1: { // Active
+      text: 'ACTIVE',
+      classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
+      icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
+    },
+    2: { // Inactive
+      text: 'INACTIVE',
+      classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
+      icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
+    },
+    3: { // Deleted
+      text: 'Delete',
+      classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
+      icon: <Trash2 className="h-3.5 w-3.5 fill-red-400 text-red-700" />,
+    },
+  } as const;
+
+  interface TableStatusAction {
+  status: number;
+  label: string;
+  confirmMessage: string;
+  color: string;
+}
+
+const statusActions: TableStatusAction[] = [
+  {
+    status: 3,
+    label: statusConfig[3].text,
+    confirmMessage: 'Are you sure you want to mark this order as complete?',
+    color: 'text-red-500 focus:text-red-500 focus:bg-red-500/10',
+  },
+];
+
+type Status = keyof typeof statusConfig;
+
+type UserStatusBadgeProps = {
+  status: number | null;
+};
+
+const UserStatusBadge = ({ status }: UserStatusBadgeProps) => {
+  const currentStatus = status && statusConfig[status as Status] ? statusConfig[status as Status] : statusConfig[2];
+
+  return (
+    <Badge
+      className={cn(
+        'inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold transition-colors duration-200',
+        currentStatus.classes
+      )}
+    >
+      {currentStatus.icon}
+      <span>{currentStatus.text}</span>
+    </Badge>
+  );
+};
+
 export default function SystemUsersTable(): React.ReactElement {
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [state, setState] = useState<FetchState>('idle');
@@ -71,6 +129,12 @@ export default function SystemUsersTable(): React.ReactElement {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [confirmationState, setConfirmationState] = useState<{
+    userId: number;
+    action: TableStatusAction;
+  } | null>(null);
 
   //this is call users
   const fetchUsers = useCallback(async () => {
@@ -96,54 +160,6 @@ export default function SystemUsersTable(): React.ReactElement {
       setEditingUser(null);
     }
   }, [editDialogOpen]);
-
-  //this is for active and inactive badge
-  const statusConfig = {
-    active: {
-      text: 'ACTIVE',
-      classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-      icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
-    },
-    inactive: {
-      text: 'INACTIVE',
-      classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-      icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
-    },
-    deleted: {
-      text: 'DELETED',
-      classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
-      icon: <XCircle className="h-3.5 w-3.5 fill-red-400 text-red-700" />,
-    },
-  } as const;
-
-  type UserStatusBadgeProps = {
-    status: number | null;
-  };
-
-  const UserStatusBadge = ({ status }: UserStatusBadgeProps) => {
-      let currentStatus;
-      if (status === 1) {
-        currentStatus = statusConfig.active;
-      } else if (status === 2) {
-        currentStatus = statusConfig.inactive;
-      } else if (status === 3) {
-        currentStatus = statusConfig.deleted;
-      } else {
-        currentStatus = statusConfig.inactive;
-      }
-  
-    return (
-      <Badge
-        className={cn(
-          'inline-flex items-center gap-1 px-3 py-1 text-xm font-semibold transition-colors duration-200',
-          currentStatus.classes
-        )}
-      >
-        {currentStatus.icon}
-        <span>{currentStatus.text}</span>
-      </Badge>
-    );
-  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -218,22 +234,28 @@ export default function SystemUsersTable(): React.ReactElement {
     setEditDialogOpen(true);
   };
 
-  const handleDelete = async (userId: number) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      try {
-        const deleteData = {
-          status: 3,
-        };
-        await axios.patch(`http://localhost:8080/api/users/delete/${userId}`, deleteData, {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-        });
-        await fetchUsers();
-      } catch (error) {
-        console.error('Error deleting user:', error);
-      }
+  const handleConfirmAction = async () => {
+    if (confirmationState) {
+      await updateTableStatus(confirmationState.userId, confirmationState.action);
+      setConfirmationState(null);
+    }
+  };
+
+  const updateTableStatus = async (userId: number, action: TableStatusAction) => {
+    setIsLoading(true);
+    try {
+      await axios.patch(`http://localhost:8080/api/users/delete/${userId}`, {
+        status: action.status,
+      });
+      await fetchUsers();
+      // toast.success(`Order updated to "${action.label}"`); 
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || `Failed to update order to ${action.label}`;
+      console.error(`Error updating order status to ${action.label}:`, error);
+      // toast.error(errorMessage);
+    } finally {
+      setIsLoading(false); // Re-enable buttons
     }
   };
 
@@ -350,21 +372,25 @@ export default function SystemUsersTable(): React.ReactElement {
                 <TableCell>
                   <UserStatusBadge status={user.status} />
                 </TableCell>
-                <TableCell className="text-right ">
+                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Ellipsis className='cursor-pointer w-5 h-5' />
+                      <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
+                        <Ellipsis className='h-5 w-5' />
+                      </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(user)}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        variant="destructive" 
-                        onClick={() => handleDelete(user.id)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
+                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(user)}>Edit</DropdownMenuItem>
+                      {statusActions.map((action) => (
+                        <DropdownMenuItem
+                          key={action.status}
+                          className={action.color}
+                          onClick={() => setConfirmationState({ userId: user.id, action })}
+                          disabled={isLoading}
+                        >
+                          {action.label}
+                        </DropdownMenuItem>
+                      ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -372,6 +398,13 @@ export default function SystemUsersTable(): React.ReactElement {
             ))}
           </TableBody>
         </Table>
+        <ConfirmationDialog
+          isOpen={!!confirmationState}
+          onClose={() => setConfirmationState(null)} // Handles Cancel/Esc/Overlay click
+          onConfirm={handleConfirmAction}            // Handles the Confirm click
+          title={`Confirm Action: ${confirmationState?.action.label || ''}`}
+          description={confirmationState?.action.confirmMessage || ''}
+        />
       </div>
 
       <div className="flex items-center justify-between text-sm">

@@ -63,7 +63,6 @@ const sidebarNavItems: NavItem[] = [
     icon: Settings,
     group: 'Core Administration',
     subItems: [
-      { href: '#', label: 'Web Colors Theme' },
       { href: '#', label: 'General Settings' },
     ],
   },

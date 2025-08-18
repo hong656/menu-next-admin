@@ -134,11 +134,7 @@ const TableStatusBadge = ({ status }: TableStatusBadgeProps) => {
   );
 };
 
-interface OrderTableProps {
-  handleEdit: (order: OrderEntry) => void;
-}
-
-export default function OrderTable({ handleEdit }: OrderTableProps): React.ReactElement {
+export default function OrderTable(): React.ReactElement {
   const [orders, setOrders] = useState<OrderEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
@@ -187,7 +183,7 @@ export default function OrderTable({ handleEdit }: OrderTableProps): React.React
     setPage(1);
   }, [query, rowsPerPage]);
 
-    const handleConfirmAction = async () => {
+  const handleConfirmAction = async () => {
     if (confirmationState) {
       await updateOrderStatus(confirmationState.orderId, confirmationState.action);
       setConfirmationState(null);
@@ -240,7 +236,7 @@ export default function OrderTable({ handleEdit }: OrderTableProps): React.React
               <TableHead className="text-base">Total Price</TableHead>
               <TableHead className="text-base">Order Items</TableHead>
               <TableHead className="text-base">Placed At</TableHead>
-              <TableHead className="text-right text-base">Actions</TableHead>
+              <TableHead className="text-base">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -293,11 +289,10 @@ export default function OrderTable({ handleEdit }: OrderTableProps): React.React
                     year: 'numeric', month: 'long', day: 'numeric',
                   })}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
+                      <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
                         <Ellipsis className='h-5 w-5' />
                       </Button>
                     </DropdownMenuTrigger>
