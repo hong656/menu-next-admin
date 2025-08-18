@@ -188,15 +188,17 @@ export default function TablesTable(): React.ReactElement {
   const handleDelete = async (tableId: number) => {
     if (confirm('Are you sure you want to delete this table?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/tables/${tableId}`);
-        await fetchTables(); // Refresh data after deletion
+        const deleteData = {
+          status: 3,
+        };
+        await axios.patch(`http://localhost:8080/api/tables/${tableId}`, deleteData);
+        await fetchTables();
       } catch (error) {
         console.error('Error deleting table:', error);
       }
     }
   };
 
-  // Handler for updating an existing table entry
   const handleUpdate = async (values: Record<string, string>) => {
     if (!editingTable) return;
     try {

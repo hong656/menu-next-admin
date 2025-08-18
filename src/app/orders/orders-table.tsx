@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 type OrderItem = {
     id: number;
@@ -186,22 +187,28 @@ export default function OrderTable({ handleEdit }: OrderTableProps): React.React
     setPage(1);
   }, [query, rowsPerPage]);
 
+    const handleConfirmAction = async () => {
+    if (confirmationState) {
+      await updateOrderStatus(confirmationState.orderId, confirmationState.action);
+      setConfirmationState(null);
+    }
+  };
+
   const updateOrderStatus = async (orderId: number, action: TableStatusAction) => {
-    if (confirm('Are you sure you want to delete this order?')){
-      try {
-        await axios.patch(`http://localhost:8080/api/orders/${orderId}`, {
-          status: action.status,
-        });
-        await fetchOrders();
-        // toast.success(`Order updated to "${action.label}"`);
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.message || `Failed to update order to ${action.label}`;
-        console.error(`Error updating order status to ${action.label}:`, error);
-        // toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
+    setIsLoading(true);
+    try {
+      await axios.patch(`http://localhost:8080/api/orders/${orderId}`, {
+        status: action.status,
+      });
+      await fetchOrders();
+      // toast.success(`Order updated to "${action.label}"`); 
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || `Failed to update order to ${action.label}`;
+      console.error(`Error updating order status to ${action.label}:`, error);
+      // toast.error(errorMessage);
+    } finally {
+      setIsLoading(false); // Re-enable buttons
     }
   };
 
@@ -299,7 +306,7 @@ export default function OrderTable({ handleEdit }: OrderTableProps): React.React
                           <DropdownMenuItem
                             key={action.status}
                             className={action.color}
-                            onClick={() => updateOrderStatus(order.id, action)}
+                            onClick={() => setConfirmationState({ orderId: order.id, action })}
                             disabled={isLoading}
                           >
                             {action.label}
@@ -312,6 +319,13 @@ export default function OrderTable({ handleEdit }: OrderTableProps): React.React
             ))}
           </TableBody>
         </Table>
+        <ConfirmationDialog
+          isOpen={!!confirmationState}
+          onClose={() => setConfirmationState(null)} // Handles Cancel/Esc/Overlay click
+          onConfirm={handleConfirmAction}            // Handles the Confirm click
+          title={`Confirm Action: ${confirmationState?.action.label || ''}`}
+          description={confirmationState?.action.confirmMessage || ''}
+        />
       </div>
 
       <div className="flex items-center justify-between text-sm">

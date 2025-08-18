@@ -221,9 +221,9 @@ export default function SystemUsersTable(): React.ReactElement {
   const handleDelete = async (userId: number) => {
     if (confirm('Are you sure you want to delete this user?')) {
       try {
-          const deleteData = {
-            status: 3,
-          };
+        const deleteData = {
+          status: 3,
+        };
         await axios.patch(`http://localhost:8080/api/users/delete/${userId}`, deleteData, {
           headers: {
             'Content-Type': 'application/json',
