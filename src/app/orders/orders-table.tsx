@@ -25,9 +25,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-// --- TYPE DEFINITIONS ---
-
-// Type for a single item within an order
 type OrderItem = {
     id: number;
     menuItem: {
@@ -43,22 +40,20 @@ type OrderItem = {
     lineTotal: number;
 };
 
-// Type for the table information associated with an order
 type TableInfo = {
     id: number;
     number: number;
-    orders: any; // Can be defined more strictly if needed
+    orders: any;
 }
 
-// Type for the main order entry, matching the example data
 type OrderEntry = {
   id: number;
   table: TableInfo;
-  status: number; // 1: Active, 2: Inactive, 3: Deleted
+  status: number;
   remark: string;
   totalCents: number;
-  placedAt: string; // Matched to API
-  updatedAt: string; // Matched to API
+  placedAt: string;
+  updatedAt: string;
   orderItems: OrderItem[];
 };
 
@@ -77,8 +72,8 @@ const statusConfig = {
   },
   3: {
     text: 'Completed',
-    classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="!h-4 !w-4 text-emerald-400" />,
+    classes: 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-400',
+    icon: <CheckCircle2 className="!h-4 !w-4 text-blue-400" />,
   },
   4: {
     text: 'Canceled',
@@ -86,6 +81,34 @@ const statusConfig = {
     icon: <Trash2 className="!h-4 !w-4 fill-red-400 text-red-700" />,
   },
 } as const;
+
+interface TableStatusAction {
+  status: number;
+  label: string;
+  confirmMessage: string;
+  color: string;
+}
+
+const statusActions: TableStatusAction[] = [
+  {
+    status: 2,
+    label: statusConfig[2].text,
+    confirmMessage: 'Are you sure you want to mark this order as preparing?',
+    color: 'text-emerald-500 focus:text-emerald-500 focus:bg-emerald-500/10',
+  },
+  {
+    status: 3,
+    label: statusConfig[3].text,
+    confirmMessage: 'Are you sure you want to mark this order as complete?',
+    color: 'text-blue-500 focus:text-blue-500 focus:bg-blue-500/10',
+  },
+  {
+    status: 4,
+    label: statusConfig[4].text,
+    confirmMessage: 'Are you sure you want to cancel this order?',
+    color: 'text-red-500 focus:text-red-500 focus:bg-red-500/10',
+  },
+];
 
 type Status = keyof typeof statusConfig;
 
@@ -110,24 +133,30 @@ const TableStatusBadge = ({ status }: TableStatusBadgeProps) => {
   );
 };
 
+interface OrderTableProps {
+  handleEdit: (order: OrderEntry) => void;
+}
 
-export default function OrderTable(): React.ReactElement {
+export default function OrderTable({ handleEdit }: OrderTableProps): React.ReactElement {
   const [orders, setOrders] = useState<OrderEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetches all order entries from the API
+  const [confirmationState, setConfirmationState] = useState<{
+    orderId: number;
+    action: TableStatusAction;
+  } | null>(null);
+
   const fetchOrders = useCallback(async () => {
     setState('loading');
     try {
-      // CORRECTED: Expect a direct array of OrderEntry
       const { data } = await axios.get<OrderEntry[]>('http://localhost:8080/api/orders', {
         headers: { Accept: 'application/json' },
       });
       
-      // CORRECTED: Use the 'data' from the response directly
       setOrders(Array.isArray(data) ? data : []);
       
       setState('success');
@@ -141,7 +170,6 @@ export default function OrderTable(): React.ReactElement {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Filters orders based on the search query (table number)
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return orders;
@@ -158,14 +186,21 @@ export default function OrderTable(): React.ReactElement {
     setPage(1);
   }, [query, rowsPerPage]);
 
-  // Handler for deleting an order entry
-  const handleDelete = async (orderId: number) => {
-    if (confirm('Are you sure you want to delete this order?')) {
+  const updateOrderStatus = async (orderId: number, action: TableStatusAction) => {
+    if (confirm('Are you sure you want to delete this order?')){
       try {
-        await axios.delete(`http://localhost:8080/api/orders/${orderId}`);
-        await fetchOrders(); // Refresh data after deletion
-      } catch (error) {
-        console.error('Error deleting order:', error);
+        await axios.patch(`http://localhost:8080/api/orders/${orderId}`, {
+          status: action.status,
+        });
+        await fetchOrders();
+        // toast.success(`Order updated to "${action.label}"`);
+      } catch (error: any) {
+        const errorMessage =
+          error.response?.data?.message || `Failed to update order to ${action.label}`;
+        console.error(`Error updating order status to ${action.label}:`, error);
+        // toast.error(errorMessage);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -259,14 +294,18 @@ export default function OrderTable(): React.ReactElement {
                         <Ellipsis className='h-5 w-5' />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
-                        onClick={() => handleDelete(order.id)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
+                      <DropdownMenuContent align="end">
+                        {statusActions.map((action) => (
+                          <DropdownMenuItem
+                            key={action.status}
+                            className={action.color}
+                            onClick={() => updateOrderStatus(order.id, action)}
+                            disabled={isLoading}
+                          >
+                            {action.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
