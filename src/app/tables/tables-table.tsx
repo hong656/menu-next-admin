@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import Link from 'next/link';
 
 // --- CHANGE HERE ---
 type TableEntry = {
@@ -321,6 +322,9 @@ export default function TablesTable(): React.ReactElement {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <Link href={`/tables/${table.id}`}>
+                        <DropdownMenuItem className='text-green-500 focus:text-green-500 focus:bg-green-500/10'>Get Qr Code</DropdownMenuItem>
+                      </Link>
                       <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(table)}>Edit</DropdownMenuItem>
                       {statusActions.map((action) => (
                         <DropdownMenuItem
