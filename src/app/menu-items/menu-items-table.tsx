@@ -17,6 +17,7 @@ import {
   BadgePlus,
   CheckCircle2,
   XCircle,
+  Trash2,
   Image as ImageIcon,
 } from 'lucide-react';
 
@@ -27,6 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 type MenuItem = {
   id: number;
@@ -34,7 +36,7 @@ type MenuItem = {
   description: string;
   priceCents: number;
   imageUrl?: string | null;
-  available: boolean;
+  status: number;
 };
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
@@ -49,13 +51,64 @@ const isUrlValid = (url: string | null | undefined): url is string => {
     return typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
 }
 
-type FormValues = {
-  name: string;
-  description: string;
-  priceCents: number | string; // Can be string from form input
-  available: boolean | string; // Can be string from form input
-  image?: File | string; // Can be a File object (new upload) or a string (existing URL)
+// Configuration for status badges
+const statusConfig = {
+  1: { // Active
+    text: 'ACTIVE',
+    classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
+    icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
+  },
+  2: { // Inactive
+    text: 'INACTIVE',
+    classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
+    icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
+  },
+  3: { // Deleted
+    text: 'Delete',
+    classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
+    icon: <Trash2 className="h-3.5 w-3.5 fill-red-400 text-red-700" />,
+  },
+} as const;
+
+interface MenuItemStatusAction {
+  status: number;
+  label: string;
+  confirmMessage: string;
+  color: string;
+}
+
+const statusActions: MenuItemStatusAction[] = [
+    {
+        status: 3,
+        label: 'Delete',
+        confirmMessage: 'Are you sure you want to delete this item?',
+        color: 'text-red-500 focus:text-red-500 focus:bg-red-500/10',
+    },
+];
+
+type Status = keyof typeof statusConfig;
+
+type MenuItemStatusBadgeProps = {
+  status: number | null;
 };
+
+// Component to render a status badge
+const MenuItemStatusBadge = ({ status }: MenuItemStatusBadgeProps) => {
+  const currentStatus = status && statusConfig[status as Status] ? statusConfig[status as Status] : statusConfig[2];
+
+  return (
+    <Badge
+      className={cn(
+        'inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold transition-colors duration-200',
+        currentStatus.classes
+      )}
+    >
+      {currentStatus.icon}
+      <span>{currentStatus.text}</span>
+    </Badge>
+  );
+};
+
 
 export default function MenuItemTable(): React.ReactElement {
   const BACKEND_URL = 'http://localhost:8080';
@@ -69,6 +122,12 @@ export default function MenuItemTable(): React.ReactElement {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [confirmationState, setConfirmationState] = useState<{
+    itemId: number;
+    action: MenuItemStatusAction;
+  } | null>(null);
 
   const fetchMenuItems = useCallback(async () => {
     setState('loading');
@@ -94,42 +153,10 @@ export default function MenuItemTable(): React.ReactElement {
     }
   }, [editDialogOpen]);
 
-  const availabilityConfig = {
-    available: {
-      text: 'AVAILABLE',
-      classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-      icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
-    },
-    unavailable: {
-      text: 'UNAVAILABLE',
-      classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-      icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
-    },
-  } as const;
-
-  type AvailabilityBadgeProps = {
-    available: boolean;
-  };
-
-  const AvailabilityBadge = ({ available }: AvailabilityBadgeProps) => {
-    const currentStatus = available ? availabilityConfig.available : availabilityConfig.unavailable;
-  
-    return (
-      <Badge
-        className={cn(
-          'inline-flex items-center gap-1 px-3 py-1 text-xm font-semibold transition-colors duration-200',
-          currentStatus.classes
-        )}
-      >
-        {currentStatus.icon}
-        <span>{currentStatus.text}</span>
-      </Badge>
-    );
-  };
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = menuItems;
+
     if (q) {
       list = list.filter((item) => {
         const name = item.name.toLowerCase();
@@ -137,10 +164,12 @@ export default function MenuItemTable(): React.ReactElement {
         return name.includes(q) || description.includes(q);
       });
     }
+
     if (status !== 'all') {
-      const shouldBeAvailable = status === 'available';
-      list = list.filter((item) => item.available === shouldBeAvailable);
+      const numericStatus = status === 'available' ? 1 : 2;
+      list = list.filter((item) => item.status === numericStatus);
     }
+
     return list;
   }, [menuItems, query, status]);
 
@@ -159,9 +188,9 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
     { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
-    { name: 'available', label: 'Available', type: 'select', required: true, options: [
-      { label: 'Available', value: 'true' },
-      { label: 'Unavailable', value: 'false' }
+    { name: 'status', label: 'Status', type: 'select', required: true, options: [
+      { label: 'Active', value: '1' },
+      { label: 'Inactive', value: '2' }
     ] },
   ];
 
@@ -170,9 +199,9 @@ export default function MenuItemTable(): React.ReactElement {
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
     { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
-    { name: 'available', label: 'Available', type: 'select', required: true, options: [
-      { label: 'Available', value: 'true' },
-      { label: 'Unavailable', value: 'false' }
+    { name: 'status', label: 'Status', type: 'select', required: true, options: [
+      { label: 'Active', value: '1' },
+      { label: 'Inactive', value: '2' }
     ] },
   ];
 
@@ -191,14 +220,26 @@ export default function MenuItemTable(): React.ReactElement {
     setEditDialogOpen(true);
   };
 
-  const handleDelete = async (itemId: number) => {
-    if (confirm('Are you sure you want to delete this menu item?')) {
-      try {
-        await axios.delete(`http://localhost:8080/api/menu-items/${itemId}`);
-        setMenuItems(prev => prev.filter(item => item.id !== itemId));
-      } catch (error) {
-        console.error('Error deleting menu item:', error);
-      }
+  const handleConfirmAction = async () => {
+    if (confirmationState) {
+      await updateMenuItemStatus(confirmationState.itemId, confirmationState.action);
+      setConfirmationState(null);
+    }
+  };
+
+  const updateMenuItemStatus = async (itemId: number, action: MenuItemStatusAction) => {
+    setIsLoading(true);
+    try {
+      await axios.patch(`http://localhost:8080/api/menu-items/${itemId}`, {
+        status: action.status,
+      });
+      await fetchMenuItems();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || `Failed to update item to ${action.label}`;
+      console.error(`Error updating item status to ${action.label}:`, error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -267,7 +308,7 @@ export default function MenuItemTable(): React.ReactElement {
               <TableHead className="text-base">Name</TableHead>
               <TableHead className="text-base">Description</TableHead>
               <TableHead className="text-base">Price</TableHead>
-              <TableHead className="text-base">Availability</TableHead>
+              <TableHead className="text-base">Status</TableHead>
               <TableHead className="text-base">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -323,7 +364,7 @@ export default function MenuItemTable(): React.ReactElement {
                   <TableCell className="max-w-xs truncate">{item.description}</TableCell>
                   <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
                   <TableCell>
-                    <AvailabilityBadge available={item.available} />
+                    <MenuItemStatusBadge status={item.status} />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -336,12 +377,16 @@ export default function MenuItemTable(): React.ReactElement {
                         <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(item)}>
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          Delete
-                        </DropdownMenuItem>
+                        {statusActions.map((action) => (
+                            <DropdownMenuItem
+                                key={action.status}
+                                className={action.color}
+                                onClick={() => setConfirmationState({ itemId: item.id, action })}
+                                disabled={isLoading || item.status === action.status}
+                            >
+                                {action.label}
+                            </DropdownMenuItem>
+                        ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -417,7 +462,7 @@ export default function MenuItemTable(): React.ReactElement {
         fields={fields}
         layout={{
           fileFields: ['image'],
-          dataFields: ['name', 'description', 'priceCents', 'available']
+          dataFields: ['name', 'description', 'priceCents', 'status']
         }}
         submitLabel="Create"
         cancelLabel="Cancel"
@@ -430,23 +475,29 @@ export default function MenuItemTable(): React.ReactElement {
         title="Edit Menu Item"
         description="Update menu item information"
         fields={editFields}
-        // ADD THE LAYOUT PROP here as well
         layout={{
           fileFields: ['image'],
-          dataFields: ['name', 'description', 'priceCents', 'available']
+          dataFields: ['name', 'description', 'priceCents', 'status']
         }}
         submitLabel="Update"
         cancelLabel="Cancel"
         initialValues={editingItem ? {
-    name: editingItem.name,
-    description: editingItem.description,
-    priceCents: String(editingItem.priceCents),
-    available: String(editingItem.available),
-    // FIX: Provide a fallback empty string if imageUrl is null or undefined
-    image: editingItem.imageUrl ?? '', 
-  } : undefined}
-  onSubmit={handleUpdate}
+            name: editingItem.name,
+            description: editingItem.description,
+            priceCents: String(editingItem.priceCents),
+            status: String(editingItem.status),
+            image: editingItem.imageUrl ?? '', 
+        } : undefined}
+        onSubmit={handleUpdate}
       />
+
+      <ConfirmationDialog
+          isOpen={!!confirmationState}
+          onClose={() => setConfirmationState(null)}
+          onConfirm={handleConfirmAction}
+          title={`Confirm Action: ${confirmationState?.action.label || ''}`}
+          description={confirmationState?.action.confirmMessage || ''}
+        />
     </div>
   );
 }

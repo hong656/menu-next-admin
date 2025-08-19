@@ -86,7 +86,7 @@ function getRoleLabel(role: number | string | null | undefined): string {
   label: string;
   confirmMessage: string;
   color: string;
-}
+  }
 
 const statusActions: TableStatusAction[] = [
   {
