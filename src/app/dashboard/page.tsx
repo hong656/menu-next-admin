@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogPortal,
+  AlertDialogOverlay,
 } from "@/components/ui/alert-dialog";
 
 type OrderStatus = 'new' | 'pending' | 'completed' | 'rejected';
@@ -325,8 +327,6 @@ export default function RestaurantDashboard() {
     const [listFetchState, setListFetchState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [detailFetchState, setDetailFetchState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-    const dashboardRef = useRef<HTMLDivElement>(null);
-
     const [dialogState, setDialogState] = useState({
         isOpen: false,
         title: '',
@@ -342,9 +342,13 @@ export default function RestaurantDashboard() {
         setPendingAction({ orderId, status });
     };
 
-    // --- Data Fetching ---
+    const isInitialLoad = useRef(true);
+
     const fetchOrders = useCallback(async () => {
-        setListFetchState('loading');
+        if (isInitialLoad.current) {
+            setListFetchState('loading');
+        }
+
         try {
             const { data } = await axios.get<ApiListResponse>('http://localhost:8080/api/orders', {
                 headers: { Accept: 'application/json' },
@@ -353,16 +357,20 @@ export default function RestaurantDashboard() {
             setOrders(transformedOrders);
             setStats(transformedStats);
             
-            if (selectedOrderId === null) {
+            if (isInitialLoad.current && transformedOrders.length > 0) {
                 const firstActionableOrder = transformedOrders.find(o => o.status === 'new' || o.status === 'pending');
                 if (firstActionableOrder) {
                     setSelectedOrderId(firstActionableOrder.id);
                 }
+                isInitialLoad.current = false; 
             }
+
             setListFetchState('success');
         } catch (err) {
             console.error('Failed to fetch order list:', err);
-            setListFetchState('error');
+            if (isInitialLoad.current) {
+                setListFetchState('error');
+            }
         }
     }, []);
 
@@ -450,10 +458,12 @@ export default function RestaurantDashboard() {
 
     const handleToggleFullScreen = () => {
         if (!document.fullscreenElement) {
-            dashboardRef.current?.requestFullscreen().catch(err => {
+            // Request fullscreen on the entire document, just like F11
+            document.documentElement.requestFullscreen().catch(err => {
                 alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
             });
         } else {
+            // Exit fullscreen
             if (document.exitFullscreen) {
                 document.exitFullscreen();
             }
@@ -469,7 +479,7 @@ export default function RestaurantDashboard() {
     const sortedOrders = [...orders].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return (
-        <div ref={dashboardRef} className="flex flex-col h-screen overflow-hidden">
+        <div className="flex flex-col h-screen overflow-hidden">
             <DashboardHeader 
                 currentTime={currentTime} 
                 isFullScreen={isFullScreen}
@@ -532,47 +542,49 @@ export default function RestaurantDashboard() {
             </main>
 
             <AlertDialog
-                open={!!pendingAction}
-                onOpenChange={() => setPendingAction(null)}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action will update the status of Order #{pendingAction?.orderId} to "{pendingAction?.status}".
-                            This cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <Button variant="outline" onClick={() => setPendingAction(null)}>
-                            Cancel
-                        </Button>
-                        <AlertDialogAction onClick={handleUpdateOrderStatus}>
-                            Proceed
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+    open={!!pendingAction}
+    onOpenChange={() => setPendingAction(null)}
+>
+    {/* No Portal or container needed anymore */}
+    <AlertDialogContent>
+        <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action will update the status of Order #{pendingAction?.orderId} to "{pendingAction?.status}".
+                This cannot be undone.
+            </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setPendingAction(null)}>
+                Cancel
+            </Button>
+            <AlertDialogAction onClick={handleUpdateOrderStatus}>
+                Proceed
+            </AlertDialogAction>
+        </AlertDialogFooter>
+    </AlertDialogContent>
+</AlertDialog>
 
-            {/* 2. The NOTIFICATION Dialog (for success/failure) */}
-            <AlertDialog
-                open={dialogState.isOpen}
-                onOpenChange={(isOpen) => setDialogState({ ...dialogState, isOpen })}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{dialogState.title}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {dialogState.description}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogAction onClick={() => setDialogState({ ...dialogState, isOpen: false })}>
-                            OK
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+{/* 2. The NOTIFICATION Dialog (for success/failure) */}
+<AlertDialog
+    open={dialogState.isOpen}
+    onOpenChange={(isOpen) => setDialogState({ ...dialogState, isOpen })}
+>
+    {/* No Portal or container needed anymore */}
+    <AlertDialogContent>
+        <AlertDialogHeader>
+            <AlertDialogTitle>{dialogState.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+                {dialogState.description}
+            </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setDialogState({ ...dialogState, isOpen: false })}>
+                OK
+            </AlertDialogAction>
+        </AlertDialogFooter>
+    </AlertDialogContent>
+</AlertDialog>
         </div>
     );
 }
