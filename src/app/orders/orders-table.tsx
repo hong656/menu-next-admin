@@ -150,11 +150,11 @@ export default function OrderTable(): React.ReactElement {
   const fetchOrders = useCallback(async () => {
     setState('loading');
     try {
-      const { data } = await axios.get<OrderEntry[]>('http://localhost:8080/api/orders', {
+      const { data } = await axios.get<{ orders: OrderEntry[] }>('http://localhost:8080/api/orders', {
         headers: { Accept: 'application/json' },
       });
       
-      setOrders(Array.isArray(data) ? data : []);
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
       
       setState('success');
     } catch (err) {
