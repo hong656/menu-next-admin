@@ -63,13 +63,13 @@ type FetchState = 'idle' | 'loading' | 'error' | 'success';
 const statusConfig = {
   1: {
     text: 'Received',
-    classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-    icon: <Clock9 className="!h-4 !w-4 text-yellow-400" />,
+    classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
+    icon: <XCircle className="!h-4 !w-4 fill-emerald-400 text-emerald-400" />,
   },
   2: {
     text: 'Preparing',
-    classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <XCircle className="!h-4 !w-4 fill-emerald-400 text-emerald-400" />,
+    classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
+    icon: <Clock9 className="!h-4 !w-4 text-yellow-400" />,
   },
   3: {
     text: 'Completed',
