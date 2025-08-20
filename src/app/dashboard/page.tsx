@@ -1,5 +1,6 @@
 "use client";
 
+import ProtectedRoute from "@/components/auth/protected-route";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -479,112 +480,114 @@ export default function RestaurantDashboard() {
     const sortedOrders = [...orders].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden">
-            <DashboardHeader 
-                currentTime={currentTime} 
-                isFullScreen={isFullScreen}
-                onToggleFullScreen={handleToggleFullScreen}
-            />
-            
-            <main className="flex-grow p-6 flex flex-col min-h-0">
-                {listFetchState === 'loading' && orders.length === 0 && (
-                    <div className="flex-grow flex items-center justify-center">
-                        <Loader2 className="h-12 w-12 animate-spin text-teal-600" />
-                        <p className="ml-4 text-xl font-medium text-gray-600">Loading Orders...</p>
-                    </div>
-                )}
-                {listFetchState === 'error' && (
-                     <div className="flex-grow flex flex-col items-center justify-center bg-red-50 text-red-700 rounded-lg p-8">
-                        <AlertCircle className="h-12 w-12" />
-                        <p className="mt-4 text-xl font-medium">Failed to Load Orders</p>
-                        <p className="text-sm">Please check the connection and try again.</p>
-                        <Button onClick={() => fetchOrders()} className="mt-4">Retry</Button>
-                    </div>
-                )}
+        <ProtectedRoute>
+            <div className="flex flex-col h-screen overflow-hidden">
+                <DashboardHeader 
+                    currentTime={currentTime} 
+                    isFullScreen={isFullScreen}
+                    onToggleFullScreen={handleToggleFullScreen}
+                />
                 
-                {(listFetchState === 'success' || orders.length > 0) && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow min-h-0">
-                        {/* Left Column: Order List & Stats */}
-                        <div className="flex flex-col gap-6 min-h-0">
-                            <div className="grid grid-cols-4 gap-2">
-                                <StatCard title="New Orders" value={stats.new}/>
-                                <StatCard title="Pending" value={stats.pending}/>
-                                <StatCard title="Completed" value={stats.completed} />
-                                <StatCard title="Canceled" value={stats.canceled} />
+                <main className="flex-grow p-6 flex flex-col min-h-0">
+                    {listFetchState === 'loading' && orders.length === 0 && (
+                        <div className="flex-grow flex items-center justify-center">
+                            <Loader2 className="h-12 w-12 animate-spin text-teal-600" />
+                            <p className="ml-4 text-xl font-medium text-gray-600">Loading Orders...</p>
+                        </div>
+                    )}
+                    {listFetchState === 'error' && (
+                         <div className="flex-grow flex flex-col items-center justify-center bg-red-50 text-red-700 rounded-lg p-8">
+                            <AlertCircle className="h-12 w-12" />
+                            <p className="mt-4 text-xl font-medium">Failed to Load Orders</p>
+                            <p className="text-sm">Please check the connection and try again.</p>
+                            <Button onClick={() => fetchOrders()} className="mt-4">Retry</Button>
+                        </div>
+                    )}
+                    
+                    {(listFetchState === 'success' || orders.length > 0) && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow min-h-0">
+                            {/* Left Column: Order List & Stats */}
+                            <div className="flex flex-col gap-6 min-h-0">
+                                <div className="grid grid-cols-4 gap-2">
+                                    <StatCard title="New Orders" value={stats.new}/>
+                                    <StatCard title="Pending" value={stats.pending}/>
+                                    <StatCard title="Completed" value={stats.completed} />
+                                    <StatCard title="Canceled" value={stats.canceled} />
+                                </div>
+                                <Card className="flex-grow flex flex-col min-h-0">
+                                    <CardHeader>
+                                        <CardTitle>All Orders</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow overflow-y-auto space-y-3 pr-2">
+                                       {sortedOrders.map(order => (
+                                           <OrderListItem
+                                                key={order.id}
+                                                order={order}
+                                                isSelected={order.id === selectedOrderId}
+                                                onSelect={setSelectedOrderId}
+                                           />
+                                       ))}
+                                    </CardContent>
+                                </Card>
                             </div>
-                            <Card className="flex-grow flex flex-col min-h-0">
-                                <CardHeader>
-                                    <CardTitle>All Orders</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex-grow overflow-y-auto space-y-3 pr-2">
-                                   {sortedOrders.map(order => (
-                                       <OrderListItem
-                                            key={order.id}
-                                            order={order}
-                                            isSelected={order.id === selectedOrderId}
-                                            onSelect={setSelectedOrderId}
-                                       />
-                                   ))}
-                                </CardContent>
-                            </Card>
+
+                            {/* Right Column: Order Details */}
+                            <div className="lg:col-span-2 min-h-0">
+                               <OrderDetail 
+                                    order={detailedOrder} 
+                                    fetchState={detailFetchState}
+                                    onUpdateStatus={initiateOrderStatusUpdate}
+                                />
+                            </div>
                         </div>
+                    )}
+                </main>
 
-                        {/* Right Column: Order Details */}
-                        <div className="lg:col-span-2 min-h-0">
-                           <OrderDetail 
-                                order={detailedOrder} 
-                                fetchState={detailFetchState}
-                                onUpdateStatus={initiateOrderStatusUpdate}
-                            />
-                        </div>
-                    </div>
-                )}
-            </main>
+                <AlertDialog
+        open={!!pendingAction}
+        onOpenChange={() => setPendingAction(null)}
+    >
+        {/* No Portal or container needed anymore */}
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action will update the status of Order #{pendingAction?.orderId} to "{pendingAction?.status}".
+                    This cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <Button variant="outline" onClick={() => setPendingAction(null)}>
+                    Cancel
+                </Button>
+                <AlertDialogAction onClick={handleUpdateOrderStatus}>
+                    Proceed
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
 
-            <AlertDialog
-    open={!!pendingAction}
-    onOpenChange={() => setPendingAction(null)}
->
-    {/* No Portal or container needed anymore */}
-    <AlertDialogContent>
-        <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action will update the status of Order #{pendingAction?.orderId} to "{pendingAction?.status}".
-                This cannot be undone.
-            </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setPendingAction(null)}>
-                Cancel
-            </Button>
-            <AlertDialogAction onClick={handleUpdateOrderStatus}>
-                Proceed
-            </AlertDialogAction>
-        </AlertDialogFooter>
-    </AlertDialogContent>
-</AlertDialog>
-
-{/* 2. The NOTIFICATION Dialog (for success/failure) */}
-<AlertDialog
-    open={dialogState.isOpen}
-    onOpenChange={(isOpen) => setDialogState({ ...dialogState, isOpen })}
->
-    {/* No Portal or container needed anymore */}
-    <AlertDialogContent>
-        <AlertDialogHeader>
-            <AlertDialogTitle>{dialogState.title}</AlertDialogTitle>
-            <AlertDialogDescription>
-                {dialogState.description}
-            </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setDialogState({ ...dialogState, isOpen: false })}>
-                OK
-            </AlertDialogAction>
-        </AlertDialogFooter>
-    </AlertDialogContent>
-</AlertDialog>
-        </div>
+    {/* 2. The NOTIFICATION Dialog (for success/failure) */}
+    <AlertDialog
+        open={dialogState.isOpen}
+        onOpenChange={(isOpen) => setDialogState({ ...dialogState, isOpen })}
+    >
+        {/* No Portal or container needed anymore */}
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>{dialogState.title}</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {dialogState.description}
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setDialogState({ ...dialogState, isOpen: false })}>
+                    OK
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+            </div>
+        </ProtectedRoute>
     );
 }
