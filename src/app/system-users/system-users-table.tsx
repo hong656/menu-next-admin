@@ -26,6 +26,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 type SystemUser = {
   id: number;
@@ -220,13 +222,24 @@ export default function SystemUsersTable(): React.ReactElement {
       role: Number(values.role),
       status: Number(values.status),
     };
-    await axios.post('http://localhost:8080/api/auth/signup', createData, {
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-    });
-    await fetchUsers();
+
+    try {
+      await axios.post('http://localhost:8080/api/auth/signup', createData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+      await fetchUsers();
+      toast.success("User Created", {
+        description: `User has been successfully created.`,
+      });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error("User Creation Failed", {
+        description: "Failed to create user. Please try again.",
+      });
+    }
   };
 
   const handleEdit = (user: SystemUser) => {
@@ -248,14 +261,18 @@ export default function SystemUsersTable(): React.ReactElement {
         status: action.status,
       });
       await fetchUsers();
-      // toast.success(`Order updated to "${action.label}"`); 
+      toast.success("User Deleted", {
+        description: `User has been successfully deleted.`,
+      });
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || `Failed to update order to ${action.label}`;
       console.error(`Error updating order status to ${action.label}:`, error);
-      // toast.error(errorMessage);
+      toast.error("User Deleting Failed", {
+        description: "Failed to delete user. Please try again.",
+      });
     } finally {
-      setIsLoading(false); // Re-enable buttons
+      setIsLoading(false);
     }
   };
 
@@ -280,14 +297,21 @@ export default function SystemUsersTable(): React.ReactElement {
       
       await fetchUsers();
       setEditDialogOpen(false);
+      toast.success("User Updated", {
+        description: `User has been successfully updated.`,
+      });
       setEditingUser(null);
     } catch (error) {
       console.error('Error updating user:', error);
+      toast.error("User Updated Fail", {
+        description: `Failed to update user. Please try again.`,
+      });
     }
   };
 
   return (
     <div className="space-y-4">
+      <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Users</h1>

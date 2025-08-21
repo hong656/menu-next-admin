@@ -22,8 +22,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2, UploadCloud, X } from "lucide-react";
+import { toast } from "sonner"; // Ensure toast is imported
 
-// Configuration for each field in the form
+// ... (FieldConfig and FileFormDialogProps types remain the same)
 export type FieldConfig = {
   name: string;
   label: string;
@@ -34,7 +35,6 @@ export type FieldConfig = {
   className?: string;
 };
 
-// Props for the entire dialog component
 export type FileFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -52,6 +52,7 @@ export type FileFormDialogProps = {
   onSubmit: (formData: FormData) => Promise<void> | void;
 };
 
+
 export function FileFormDialog({
   open,
   onOpenChange,
@@ -67,7 +68,6 @@ export function FileFormDialog({
 }: FileFormDialogProps) {
   const [values, setValues] = useState<Record<string, string | File>>({});
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
-  // --- CHANGE 1: State for file validation errors ---
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -77,30 +77,43 @@ export function FileFormDialog({
       return acc;
     }, {} as Record<string, FieldConfig>), [fields]);
 
-  // --- CHANGE 2: Function to clear all local state ---
   const resetForm = () => {
     setValues({});
     setPreviewUrls({});
     setFileErrors({});
   };
 
+  // --- ⭐️ MAJOR CHANGE HERE: Improved Initialization Logic ---
   useEffect(() => {
-    // When opening for editing, populate the form
-    if (open && initialValues) {
-      setValues(initialValues);
-      const previews: Record<string, string> = {};
-      layout.fileFields.forEach(fieldName => {
-        if (initialValues[fieldName]) {
-          previews[fieldName] = initialValues[fieldName];
-        }
-      });
-      setPreviewUrls(previews);
+    if (open) {
+      // Case 1: Editing an existing item
+      if (initialValues) {
+        setValues(initialValues);
+        const previews: Record<string, string> = {};
+        layout.fileFields.forEach(fieldName => {
+          if (initialValues[fieldName]) {
+            previews[fieldName] = initialValues[fieldName];
+          }
+        });
+        setPreviewUrls(previews);
+      } 
+      // Case 2: Creating a new item
+      else {
+        // Initialize all form fields with an empty string.
+        // This ensures every field, including 'image', exists in the `values` state object.
+        const initialFormState = fields.reduce((acc, field) => {
+          acc[field.name] = '';
+          return acc;
+        }, {} as Record<string, string | File>);
+        setValues(initialFormState);
+      }
     } 
-    // When the dialog is closed, always reset the form
-    else if (!open) {
+    // Case 3: Dialog is closing
+    else {
       resetForm();
     }
-  }, [open, initialValues, layout.fileFields]);
+    // Add `fields` to the dependency array as it's used for initialization
+  }, [open, initialValues, layout.fileFields, fields]);
 
 
   useEffect(() => {
@@ -121,17 +134,13 @@ export function FileFormDialog({
     const { name } = e.target;
     const file = e.target.files?.[0];
 
-    // --- CHANGE 3: File Type Validation Logic ---
     if (file) {
-      // Check if the file type is an image
       if (!file.type.startsWith("image/")) {
         setFileErrors(prev => ({ ...prev, [name]: "Invalid file type. Please select an image." }));
-        // Clear the input value so the user can select again
         e.target.value = ""; 
         return;
       }
 
-      // Clear any previous error for this field
       setFileErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
@@ -151,7 +160,9 @@ export function FileFormDialog({
   };
 
   const handleRemoveFile = (fieldName: string) => {
+    // Set the value to an empty string to signify it's been removed
     setValues(prev => ({...prev, [fieldName]: ""}));
+    
     setFileErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[fieldName];
@@ -171,13 +182,25 @@ export function FileFormDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // --- Validation Logic (Now works reliably) ---
+    for (const field of fields) {
+      if (field.required) {
+        const value = values[field.name];
+        // The check `!value` will now correctly catch an empty string '' for the image field
+        if (!value) {
+          toast.error("Missing Information", {
+            description: `The "${field.label}" field is required. Please provide a value.`,
+          });
+          return; // Stop submission
+        }
+      }
+    }
+    
     setSubmitting(true);
-
     const formData = new FormData();
-    // --- CHANGE 4: Corrected FormData append logic ---
     for (const key in values) {
       const value = values[key];
-      // Only append if it's a File or a non-empty string
       if (value instanceof File || (typeof value === 'string' && value !== '')) {
         formData.append(key, value);
       }
@@ -185,7 +208,7 @@ export function FileFormDialog({
 
     try {
       await onSubmit(formData);
-      onOpenChange(false); // Close dialog on success (will trigger reset via useEffect)
+      onOpenChange(false);
     } catch (error) {
       console.error("Submission failed:", error);
     } finally {
@@ -193,6 +216,7 @@ export function FileFormDialog({
     }
   };
 
+  // ... (The entire `renderField` function and the JSX return statement remain exactly the same)
   const renderField = (fieldName: string) => {
     const field = fieldsByName[fieldName];
     if (!field) return null;
@@ -200,7 +224,7 @@ export function FileFormDialog({
     if (field.type === 'file') {
       return (
         <div key={field.name} className={cn("space-y-2", field.className)}>
-          <Label>{field.label}</Label>
+          <Label>{field.label} {field.required && <span className="text-red-500">*</span>}</Label>
           <label
             htmlFor={field.name}
             className="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer transition-colors"
@@ -239,7 +263,6 @@ export function FileFormDialog({
             <Input
               id={field.name}
               name={field.name}
-              required={field.required}
               type="file"
               className="hidden"
               accept="image/*"
@@ -247,7 +270,6 @@ export function FileFormDialog({
               value=""
             />
           </label>
-          {/* --- CHANGE 5: Display validation error message --- */}
           {fileErrors[field.name] && (
             <p className="text-sm text-red-500">{fileErrors[field.name]}</p>
           )}
@@ -289,7 +311,7 @@ export function FileFormDialog({
         </div>
     );
   };
-
+  
   const isProcessing = submitting || isLoading;
 
   return (
@@ -305,27 +327,25 @@ export function FileFormDialog({
             <div className="md:col-span-2 space-y-4">{layout.dataFields.map(fieldName => renderField(fieldName))}</div>
           </div>
           <DialogFooter className="mt-8 pt-6 border-t border-gray-700">
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={submitting}
-                className="cursor-pointer"
-              >
-                {cancelLabel}
-              </Button>
-              <Button type="submit" className="cursor-pointer " disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="curpomr-2 h-4 w-4 animate-spin" />
-                    Please wait
-                  </>
-                ) : (
-                  submitLabel
-                )}
-              </Button>
-            </DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isProcessing}
+              className="cursor-pointer"
+            >
+              {cancelLabel}
+            </Button>
+            <Button type="submit" className="cursor-pointer " disabled={isProcessing}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                submitLabel
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

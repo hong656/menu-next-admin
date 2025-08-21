@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import Link from 'next/link';
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 // --- CHANGE HERE ---
 type TableEntry = {
@@ -197,9 +199,15 @@ export default function TablesTable(): React.ReactElement {
       await axios.post('http://localhost:8080/api/tables', createData, {
         headers: { 'Content-Type': 'application/json' },
       });
-      await fetchTables(); // Refresh data after creation
+      await fetchTables();
+      toast.success("Table Created", {
+        description: "The new table has been successfully added.",
+      });
     } catch (error) {
       console.error('Failed to create table:', error);
+      toast.error("Creation Failed", {
+        description: "Could not create the table. Please try again.",
+      });
     }
   };
 
@@ -222,12 +230,16 @@ export default function TablesTable(): React.ReactElement {
         status: action.status,
       });
       await fetchTables();
-      // toast.success(`Order updated to "${action.label}"`); 
+      toast.success("Table Deleted", {
+        description: "The table has been successfully deleted.",
+      }); 
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || `Failed to update order to ${action.label}`;
       console.error(`Error updating order status to ${action.label}:`, error);
-      // toast.error(errorMessage);
+      toast.error("Delete Failed", {
+        description: "Could not delete the table. Please try again.",
+      });
     } finally {
       setIsLoading(false); // Re-enable buttons
     }
@@ -244,14 +256,21 @@ export default function TablesTable(): React.ReactElement {
         headers: { 'Content-Type': 'application/json' },
       });
       await fetchTables();
+      toast.success("Table Updated", {
+        description: "The table has been successfully updated.",
+      });
       setEditDialogOpen(false);
     } catch (error) {
       console.error('Error updating table:', error);
+      toast.error("Update Failed", {
+        description: "Could not update the table. Please try again.",
+      });
     }
   };
 
   return (
     <div className="space-y-4">
+      <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Tables</h1>

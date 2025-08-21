@@ -16,9 +16,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogPortal,
-  AlertDialogOverlay,
 } from "@/components/ui/alert-dialog";
+// --- 1. IMPORT TOAST AND TOASTER ---
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+
+// ... (All your interfaces and helper functions remain the same) ...
+// (Order interfaces, Api interfaces, transform functions, DashboardHeader, StatCard, OrderListItem, etc.)
 
 type OrderStatus = 'new' | 'pending' | 'completed' | 'rejected';
 
@@ -205,7 +209,7 @@ const OrderListItem = ({ order, isSelected, onSelect }: { order: Order; isSelect
                     </p>
                     <p className="text-sm font-medium">Table: {order.table}</p>
                 </div>
-                <div className={cn("absolute top-4 right-4", isSelected && "")}>
+                <div className={cn("absolute top-4 right-4", isSelected && "text-white")}>
                     {isSelected ? <Soup className="h-5 w-5" /> : config.icon}
                 </div>
             </div>
@@ -264,21 +268,23 @@ const OrderDetail = ({ order, fetchState, onUpdateStatus }: {
                         <p className="text-lg font-semibold">Table: {order.table}</p>
                     </div>
                 </div>
-                <div className="mt-2 text-sm">
-                    <span className="font-semibold">Remark: </span>
-                    <span>{order.remark || 'N/A'}</span>
-                </div>
+                {order.remark && (
+                    <div className="mt-2 text-sm p-2 bg-yellow-300/40 border-l-4 border-yellow-500 rounded-r-md">
+                        <span className="font-semibold">Remark: </span>
+                        <span>{order.remark}</span>
+                    </div>
+                )}
             </CardHeader>
-            <CardContent className="p-6 flex-grow overflow-y-auto">
-                <div className="space-y-4">
+            <CardContent className="px-4 pt-0 flex-grow overflow-y-auto">
+                <div>
                     {order.items.map(item => (
-                        <div key={item.id} className="flex items-center space-x-4 p-3 rounded-lg border">
-                            <div className="w-16 h-16 bg-gray-200 rounded-md flex-shrink-0 flex items-center justify-center">
+                        <div key={item.id} className="flex items-center space-x-4 p-2 rounded-lg border">
+                            <div className="w-12 h-12 bg-gray-200 rounded-md flex-shrink-0 flex items-center justify-center">
                                 <UtensilsCrossed className="h-8 w-8 text-gray-400" />
                             </div>
                             <div className="flex-grow">
                                 <p className="font-bold">{item.name}</p>
-                                <p className="text-sm">{item.description}</p>
+                                <p className="text-sm text-gray-600">{item.description}</p>
                             </div>
                             <div className="font-semibold text-lg">
                                 x{item.quantity}
@@ -288,11 +294,11 @@ const OrderDetail = ({ order, fetchState, onUpdateStatus }: {
                 </div>
             </CardContent>
             {(order.status === 'new' || order.status === 'pending') && (
-                <div className="p-4 border-t">
+                <div className="p-2 border-t">
                     <div className="grid grid-cols-2 gap-3">
                         <Button
                             size="lg"
-                            className="cursor-pointer bg-teal-600 hover:bg-teal-700 font-bold py-6 text-lg"
+                            className="cursor-pointer bg-teal-600 hover:bg-teal-700 font-bold py-2 text-lg"
                             onClick={handleAcceptOrder}
                             disabled={order.status === 'pending'}
                         >
@@ -301,7 +307,7 @@ const OrderDetail = ({ order, fetchState, onUpdateStatus }: {
                         <Button
                             size="lg"
                             variant="outline"
-                            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-6 text-lg"
+                            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 text-lg"
                             onClick={handleRejectOrder}
                         >
                             REJECT ORDER
@@ -319,8 +325,8 @@ const OrderDetail = ({ order, fetchState, onUpdateStatus }: {
 export default function RestaurantDashboard() {
     // --- State Management ---
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [orders, setOrders] = useState<Order[]>([]); // For the list on the left
-    const [detailedOrder, setDetailedOrder] = useState<Order | null>(null); // For the detail view on the right
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [detailedOrder, setDetailedOrder] = useState<Order | null>(null);
     const [stats, setStats] = useState<OrderStats>({ new: 0, pending: 0, total: 0, completed: 0, canceled: 0 });
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [isFullScreen, setIsFullScreen] = useState(false);
@@ -328,11 +334,7 @@ export default function RestaurantDashboard() {
     const [listFetchState, setListFetchState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [detailFetchState, setDetailFetchState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-    const [dialogState, setDialogState] = useState({
-        isOpen: false,
-        title: '',
-        description: '',
-    });
+    // --- REMOVED dialogState ---
 
     const [pendingAction, setPendingAction] = useState<{
         orderId: string;
@@ -389,15 +391,13 @@ export default function RestaurantDashboard() {
     };
 
     const handleUpdateOrderStatus = async () => {
-        // Abort if there's no pending action for some reason
         if (!pendingAction) return;
 
         const { orderId, status } = pendingAction;
 
-        // Map the component's string status to the API's numeric status
         const apiStatusMapping: Record<OrderStatus, number> = {
-            pending: 2, // 'Accept' action
-            rejected: 4, // 'Reject' action
+            pending: 2,
+            rejected: 4,
             new: 1,
             completed: 3,
         };
@@ -408,14 +408,11 @@ export default function RestaurantDashboard() {
                 status: numericStatus,
             });
             
-            // Show the SUCCESS notification dialog
-            setDialogState({
-                isOpen: true,
-                title: "Update Successful",
+            // --- 2. SHOW SUCCESS TOAST ---
+            toast.success("Update Successful", {
                 description: `Order #${orderId} has been set to '${status}'.`,
             });
             
-            // Refresh the UI data
             await Promise.all([
                 fetchOrders(),
                 fetchOrderDetails(orderId)
@@ -424,22 +421,20 @@ export default function RestaurantDashboard() {
         } catch (error) {
             console.error(`Failed to update order ${orderId}:`, error);
             
-            // Show the FAILURE notification dialog
-            setDialogState({
-                isOpen: true,
-                title: "Update Failed",
+            // --- 3. SHOW ERROR TOAST ---
+            toast.error("Update Failed", {
                 description: `There was an error updating order #${orderId}. Please try again.`,
             });
+
         } finally {
-            // IMPORTANT: Clear the pending action and close the confirmation dialog
             setPendingAction(null);
         }
     };
     
     // --- Effects ---
     useEffect(() => {
-        fetchOrders(); // Initial fetch
-        const intervalId = setInterval(fetchOrders, 10000); // Poll every 10 seconds
+        fetchOrders();
+        const intervalId = setInterval(fetchOrders, 10000);
         return () => clearInterval(intervalId);
     }, [fetchOrders]);
     
@@ -459,12 +454,10 @@ export default function RestaurantDashboard() {
 
     const handleToggleFullScreen = () => {
         if (!document.fullscreenElement) {
-            // Request fullscreen on the entire document, just like F11
             document.documentElement.requestFullscreen().catch(err => {
                 alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
             });
         } else {
-            // Exit fullscreen
             if (document.exitFullscreen) {
                 document.exitFullscreen();
             }
@@ -482,6 +475,9 @@ export default function RestaurantDashboard() {
     return (
         <ProtectedRoute>
             <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
+                {/* --- 4. ADD TOASTER COMPONENT HERE --- */}
+                <Toaster richColors position="top-right" />
+                
                 <DashboardHeader 
                     currentTime={currentTime} 
                     isFullScreen={isFullScreen}
@@ -506,7 +502,6 @@ export default function RestaurantDashboard() {
                     
                     {(listFetchState === 'success' || orders.length > 0) && (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow min-h-0">
-                            {/* Left Column: Order List & Stats */}
                             <div className="flex flex-col gap-6 min-h-0">
                                 <div className="grid grid-cols-4 gap-2">
                                     <StatCard title="New Orders" value={stats.new}/>
@@ -531,7 +526,6 @@ export default function RestaurantDashboard() {
                                 </Card>
                             </div>
 
-                            {/* Right Column: Order Details */}
                             <div className="lg:col-span-2 min-h-0">
                                <OrderDetail 
                                     order={detailedOrder} 
@@ -543,49 +537,30 @@ export default function RestaurantDashboard() {
                     )}
                 </main>
 
-    <AlertDialog
-        open={!!pendingAction}
-        onOpenChange={() => setPendingAction(null)}
-    >
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This action will update the status of Order #{pendingAction?.orderId} to "{pendingAction?.status}".
-                    This cannot be undone.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <Button variant="outline" onClick={() => setPendingAction(null)}>
-                    Cancel
-                </Button>
-                <AlertDialogAction onClick={handleUpdateOrderStatus}>
-                    Proceed
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                <AlertDialog
+                    open={!!pendingAction}
+                    onOpenChange={() => setPendingAction(null)}
+                >
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action will update the status of Order #{pendingAction?.orderId} to "{pendingAction?.status}".
+                                This cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <Button variant="outline" onClick={() => setPendingAction(null)}>
+                                Cancel
+                            </Button>
+                            <AlertDialogAction onClick={handleUpdateOrderStatus}>
+                                Proceed
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
 
-    {/* 2. The NOTIFICATION Dialog (for success/failure) */}
-    <AlertDialog
-        open={dialogState.isOpen}
-        onOpenChange={(isOpen) => setDialogState({ ...dialogState, isOpen })}
-    >
-        {/* No Portal or container needed anymore */}
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>{dialogState.title}</AlertDialogTitle>
-                <AlertDialogDescription>
-                    {dialogState.description}
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogAction onClick={() => setDialogState({ ...dialogState, isOpen: false })}>
-                    OK
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                {/* --- 5. REMOVED NOTIFICATION DIALOG --- */}
             </div>
         </ProtectedRoute>
     );

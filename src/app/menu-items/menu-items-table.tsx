@@ -20,7 +20,8 @@ import {
   Trash2,
   Image as ImageIcon,
 } from 'lucide-react';
-
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 import {
   DropdownMenu,
@@ -210,8 +211,14 @@ export default function MenuItemTable(): React.ReactElement {
     await axios.post(`http://localhost:8080/api/menu-items`, formData);
     await fetchMenuItems();
     setDialogOpen(false);
+    toast.success("Menu Item Created", {
+      description: "The new item has been successfully added.",
+    });
   } catch (error) {
     console.error('Error creating menu item:', error);
+    toast.error("Creation Failed", {
+      description: "Could not create the menu item. Please try again.",
+    });
   }
 };
 
@@ -234,10 +241,16 @@ export default function MenuItemTable(): React.ReactElement {
         status: action.status,
       });
       await fetchMenuItems();
+      toast.success("Menu Item Deleted", {
+        description: "has been successfully deleted.",
+      });
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || `Failed to update item to ${action.label}`;
       console.error(`Error updating item status to ${action.label}:`, error);
+      toast.error("Delete Failed", {
+      description: "The menu item could not be delete. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -250,9 +263,15 @@ export default function MenuItemTable(): React.ReactElement {
     
     await fetchMenuItems();
     setEditDialogOpen(false);
+    toast.success("Menu Item Updated", {
+      description: "has been successfully updated.",
+    });
     setEditingItem(null);
   } catch (error) {
     console.error('Error updating menu item:', error);
+    toast.error("Update Failed", {
+      description: "The menu item could not be updated. Please try again.",
+    });
   }
 };
 
@@ -262,6 +281,7 @@ export default function MenuItemTable(): React.ReactElement {
 
   return (
     <div className="space-y-4">
+      <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Menu Items</h1>

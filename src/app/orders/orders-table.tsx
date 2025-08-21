@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 type OrderItem = {
     id: number;
@@ -197,12 +199,22 @@ export default function OrderTable(): React.ReactElement {
         status: action.status,
       });
       await fetchOrders();
-      // toast.success(`Order updated to "${action.label}"`); 
+      if (action.status === 4) {
+        toast.success("Order cancelled", {
+          description: `Order has been successfully cancelled.`,
+        });
+      } else {
+        toast.success(`Order updated to "${action.label}"`, {
+          description: `Order has been successfully updated.`,
+        });
+      }
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || `Failed to update order to ${action.label}`;
       console.error(`Error updating order status to ${action.label}:`, error);
-      // toast.error(errorMessage);
+      toast.error("Order Update Failed", {
+        description: `Error updating order status`,
+      });
     } finally {
       setIsLoading(false); // Re-enable buttons
     }
@@ -210,6 +222,7 @@ export default function OrderTable(): React.ReactElement {
 
   return (
     <div className="space-y-4">
+      <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Orders</h1>
