@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import {
   Lock,
   Settings,
@@ -29,6 +29,11 @@ type NavItem = {
   group?: string; // Optional small header shown above contiguous items in the same group
 };
 
+type SidebarProps = {
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: Dispatch<SetStateAction<boolean>>;
+};
+
 const sidebarNavItems: NavItem[] = [
   {
     label: 'Dashboard',
@@ -55,20 +60,18 @@ const sidebarNavItems: NavItem[] = [
     group: 'Core Administration',
     subItems: [
       { href: '#', label: 'Role & Permission' },
-      { href: '/system-users', label: 'System Users'},
+      { href: '/system-users', label: 'System Users' },
     ],
   },
   {
     label: 'Settings',
     icon: Settings,
     group: 'Core Administration',
-    subItems: [
-      { href: '#', label: 'General Settings' },
-    ],
+    subItems: [{ href: '#', label: 'General Settings' }],
   },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
   const [openItems, setOpenItems] = useState<string[]>([]);
   const pathname = usePathname();
 
@@ -81,18 +84,33 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="fixed z-40 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-colors duration-500">
+    <aside
+      className={cn(
+        'fixed z-50 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-transform duration-300 ease-in-out',
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      )}
+    >
+      <div className="flex items-center justify-center h-16 border-b border-sidebar-border">
+        <h1 className="text-lg font-bold">Admin Menu</h1>
+      </div>
       <nav className="flex-1 space-y-2 p-4 text-sm font-medium">
         <ul>
           {sidebarNavItems.map((item, index) => {
-            const prevGroup = index > 0 ? sidebarNavItems[index - 1]?.group : undefined;
-            const hasActiveSubItem = item.subItems?.some((sub) =>
-              pathname === sub.href || pathname.startsWith(`${sub.href}/`)
-            ) ?? false;
+            const prevGroup =
+              index > 0 ? sidebarNavItems[index - 1]?.group : undefined;
+            const hasActiveSubItem =
+              item.subItems?.some(
+                (sub) =>
+                  pathname === sub.href || pathname.startsWith(`${sub.href}/`)
+              ) ?? false;
 
-            const isTopLevelActive = !!item.href && (pathname === item.href || pathname.startsWith(`${item.href}/`));
-            const isOpen = openItems.includes(item.label); // allow closing even if a subpath is active
-            const sectionId = `sidebar-section-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
+            const isTopLevelActive =
+              !!item.href &&
+              (pathname === item.href || pathname.startsWith(`${item.href}/`));
+            const isOpen = openItems.includes(item.label);
+            const sectionId = `sidebar-section-${item.label
+              .toLowerCase()
+              .replace(/\s+/g, '-')}`;
 
             return (
               <li key={item.label} className="py-1">
@@ -114,8 +132,21 @@ const Sidebar = () => {
                       )}
                     >
                       <div className="flex items-center">
-                        <item.icon className={cn('mr-3 h-5 w-5', hasActiveSubItem ? 'text-primary' : 'text-muted-foreground')} />
-                        <span className={cn(hasActiveSubItem && 'text-primary font-semibold')}>{item.label}</span>
+                        <item.icon
+                          className={cn(
+                            'mr-3 h-5 w-5',
+                            hasActiveSubItem
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            hasActiveSubItem && 'text-primary font-semibold'
+                          )}
+                        >
+                          {item.label}
+                        </span>
                       </div>
                       <ChevronDown
                         className={cn(
@@ -136,7 +167,9 @@ const Sidebar = () => {
                       <div className="min-h-0 overflow-hidden">
                         <ul className="pl-6 pt-2 space-y-1">
                           {item.subItems.map((subItem) => {
-                            const isSubActive = pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
+                            const isSubActive =
+                              pathname === subItem.href ||
+                              pathname.startsWith(`${subItem.href}/`);
                             return (
                               <li key={subItem.label}>
                                 <Link
@@ -162,14 +195,34 @@ const Sidebar = () => {
                     href={item.href || '#'}
                     className={cn(
                       'flex items-center justify-between rounded-md px-3 py-2 transition-colors duration-500',
-                      isTopLevelActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                      isTopLevelActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
                     <div className="flex items-center">
-                      <item.icon className={cn('mr-3 h-5 w-5', isTopLevelActive ? 'text-primary' : 'text-muted-foreground')} />
-                      <span className={cn(isTopLevelActive && 'font-semibold')}>{item.label}</span>
+                      <item.icon
+                        className={cn(
+                          'mr-3 h-5 w-5',
+                          isTopLevelActive
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                        )}
+                      />
+                      <span
+                        className={cn(isTopLevelActive && 'font-semibold')}
+                      >
+                        {item.label}
+                      </span>
                     </div>
-                    <ChevronRight className={cn('h-4 w-4', isTopLevelActive ? 'text-primary' : 'text-muted-foreground')} />
+                    <ChevronRight
+                      className={cn(
+                        'h-4 w-4',
+                        isTopLevelActive
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      )}
+                    />
                   </Link>
                 )}
               </li>

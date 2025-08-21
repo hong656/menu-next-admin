@@ -141,7 +141,7 @@ const DashboardHeader = ({
     isFullScreen: boolean;
     onToggleFullScreen: () => void;
 }) => (
-    <header className="flex items-center justify-between p-4 border-b bg-teal-600">
+    <header className="flex items-center justify-between px-4 py-2 border-b bg-teal-600">
         <div className="flex items-center space-x-3">
             <UtensilsCrossed className="h-6 w-6" />
             <h1 className="text-xl font-bold">Order Dashboard</h1>
@@ -159,7 +159,7 @@ const DashboardHeader = ({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleFullScreen}
-                className="h-9 w-9 hover:bg-teal-700"
+                className="cursor-pointer h-9 w-9 hover:bg-teal-700"
             >
                 {isFullScreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
                 <span className="sr-only">Toggle Fullscreen</span>
@@ -169,8 +169,8 @@ const DashboardHeader = ({
 );
 
 const StatCard = ({ title, value }: { title: string, value: number | string }) => (
-    <Card className="border shadow-sm h-32">
-        <CardHeader className='p-0 !pt-3 text-center'>
+    <Card className="border shadow-sm h-26">
+        <CardHeader className='p-0 !pt-1 text-center'>
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <p className="text-xl font-bold text-teal-600">{value}</p>
         </CardHeader>
@@ -481,14 +481,14 @@ export default function RestaurantDashboard() {
 
     return (
         <ProtectedRoute>
-            <div className="flex flex-col h-screen overflow-hidden">
+            <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
                 <DashboardHeader 
                     currentTime={currentTime} 
                     isFullScreen={isFullScreen}
                     onToggleFullScreen={handleToggleFullScreen}
                 />
                 
-                <main className="flex-grow p-6 flex flex-col min-h-0">
+                <main className="flex-grow px-4 pt-4 pb-0 flex flex-col min-h-0">
                     {listFetchState === 'loading' && orders.length === 0 && (
                         <div className="flex-grow flex items-center justify-center">
                             <Loader2 className="h-12 w-12 animate-spin text-teal-600" />
@@ -543,11 +543,10 @@ export default function RestaurantDashboard() {
                     )}
                 </main>
 
-                <AlertDialog
+    <AlertDialog
         open={!!pendingAction}
         onOpenChange={() => setPendingAction(null)}
     >
-        {/* No Portal or container needed anymore */}
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
