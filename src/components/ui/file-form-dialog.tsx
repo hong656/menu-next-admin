@@ -33,6 +33,7 @@ export type FieldConfig = {
   required?: boolean;
   options?: Array<{ label: string; value: string }>;
   className?: string;
+  defaultValue?: string;
 };
 
 export type FileFormDialogProps = {
@@ -83,10 +84,8 @@ export function FileFormDialog({
     setFileErrors({});
   };
 
-  // --- ⭐️ MAJOR CHANGE HERE: Improved Initialization Logic ---
   useEffect(() => {
     if (open) {
-      // Case 1: Editing an existing item
       if (initialValues) {
         setValues(initialValues);
         const previews: Record<string, string> = {};
@@ -97,22 +96,17 @@ export function FileFormDialog({
         });
         setPreviewUrls(previews);
       } 
-      // Case 2: Creating a new item
       else {
-        // Initialize all form fields with an empty string.
-        // This ensures every field, including 'image', exists in the `values` state object.
         const initialFormState = fields.reduce((acc, field) => {
-          acc[field.name] = '';
+          acc[field.name] = field.defaultValue ?? '';
           return acc;
         }, {} as Record<string, string | File>);
         setValues(initialFormState);
       }
     } 
-    // Case 3: Dialog is closing
     else {
       resetForm();
     }
-    // Add `fields` to the dependency array as it's used for initialization
   }, [open, initialValues, layout.fileFields, fields]);
 
 
@@ -286,7 +280,7 @@ export function FileFormDialog({
                 value={values[field.name] as string ?? ""}
                 required={field.required}
             >
-              <SelectTrigger className="w-full mt-1 border-gray-700"><SelectValue placeholder={field.placeholder} /></SelectTrigger>
+              <SelectTrigger className="w-full mt-1 border-gray-700"><SelectValue placeholder={`Select ${field.label}`} /></SelectTrigger>
               <SelectContent className="border-gray-700">
                 {field.options?.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}
               </SelectContent>

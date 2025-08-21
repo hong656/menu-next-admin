@@ -33,10 +33,10 @@ import { Toaster } from "@/components/ui/sonner";
 type TableEntry = {
   id: number;
   number: number;
-  qrToken: string; // Matched to API
-  status: number; // 1: Active, 2: Inactive, 3: Delete
-  createdAt: string; // Matched to API
-  updatedAt: string; // Matched to API
+  qrToken: string;
+  status: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
@@ -170,7 +170,7 @@ export default function TablesTable(): React.ReactElement {
       options: [
         { label: 'Active', value: '1' },
         { label: 'Inactive', value: '2' },
-      ],
+      ], defaultValue: '1'
     },
   ];
 

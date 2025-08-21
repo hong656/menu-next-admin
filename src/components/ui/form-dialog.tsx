@@ -117,7 +117,7 @@ export function FormDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           {fields.map((field) => (
             <div key={field.name} className="space-y-1">
-              <label htmlFor={field.name} className="text-sm font-medium text-gray-700">
+              <label htmlFor={field.name} className="text-sm font-medium">
                 {field.label}
               </label>
               {field.type === "select" ? (

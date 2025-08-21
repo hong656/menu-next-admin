@@ -505,7 +505,7 @@ export default function RestaurantDashboard() {
                             <div className="flex flex-col gap-6 min-h-0">
                                 <div className="grid grid-cols-4 gap-2">
                                     <StatCard title="New Orders" value={stats.new}/>
-                                    <StatCard title="Pending" value={stats.pending}/>
+                                    <StatCard title="Preparing" value={stats.pending}/>
                                     <StatCard title="Completed" value={stats.completed} />
                                     <StatCard title="Canceled" value={stats.canceled} />
                                 </div>

@@ -199,7 +199,7 @@ export default function SystemUsersTable(): React.ReactElement {
     { name: 'status', label: 'Status', type: 'select', required: true, options: [
       { label: 'Active', value: '1' },
       { label: 'Inactive', value: '2' }
-    ] },
+    ], defaultValue: '1' },
   ];
 
   // this is for edit user
