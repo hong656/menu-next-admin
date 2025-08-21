@@ -22,9 +22,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2, UploadCloud, X } from "lucide-react";
-import { toast } from "sonner"; // Ensure toast is imported
+import { toast } from "sonner";
 
-// ... (FieldConfig and FileFormDialogProps types remain the same)
 export type FieldConfig = {
   name: string;
   label: string;

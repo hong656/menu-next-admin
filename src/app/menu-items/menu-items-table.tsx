@@ -502,11 +502,15 @@ export default function MenuItemTable(): React.ReactElement {
         submitLabel="Update"
         cancelLabel="Cancel"
         initialValues={editingItem ? {
-            name: editingItem.name,
-            description: editingItem.description,
-            priceCents: String(editingItem.priceCents),
-            status: String(editingItem.status),
-            image: editingItem.imageUrl ?? '', 
+          name: editingItem.name,
+          description: editingItem.description,
+          priceCents: String(editingItem.priceCents),
+          status: String(editingItem.status),
+          
+          // THE FIX: Create the full URL here, before it ever reaches the dialog.
+          image: editingItem.imageUrl && editingItem.imageUrl.startsWith('/')
+              ? `${BACKEND_URL}${editingItem.imageUrl}`
+              : editingItem.imageUrl ?? '',
         } : undefined}
         onSubmit={handleUpdate}
       />
