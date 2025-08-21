@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:8080/api/auth/signin', {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/signin`, {
         username,
         password
       }, {

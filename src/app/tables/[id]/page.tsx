@@ -71,7 +71,7 @@ export default function TableDetail() {
   useEffect(() => {
     const fetchTableData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8080/api/tables/detail/${id}`, {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/tables/detail/${id}`, {
           headers: {
             Accept: 'application/json',
           },

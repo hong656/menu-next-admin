@@ -120,7 +120,7 @@ export default function TablesTable(): React.ReactElement {
   const fetchTables = useCallback(async () => {
     setState('loading');
     try {
-      const { data } = await axios.get<{ data: TableEntry[] }>('http://localhost:8080/api/tables', {
+      const { data } = await axios.get<{ data: TableEntry[] }>(`${process.env.NEXT_PUBLIC_API_URL}/api/tables`, {
         headers: { Accept: 'application/json' },
       });
       // The actual data is nested in a "data" property
@@ -196,7 +196,7 @@ export default function TablesTable(): React.ReactElement {
         number: Number(values.number),
         status: Number(values.status),
       };
-      await axios.post('http://localhost:8080/api/tables', createData, {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/tables`, createData, {
         headers: { 'Content-Type': 'application/json' },
       });
       await fetchTables();
@@ -252,7 +252,7 @@ export default function TablesTable(): React.ReactElement {
         number: Number(values.number),
         status: Number(values.status),
       };
-      await axios.put(`http://localhost:8080/api/tables/${editingTable.id}`, updateData, {
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/tables/${editingTable.id}`, updateData, {
         headers: { 'Content-Type': 'application/json' },
       });
       await fetchTables();

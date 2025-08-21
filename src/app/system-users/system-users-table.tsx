@@ -288,7 +288,7 @@ export default function SystemUsersTable(): React.ReactElement {
         status: Number(values.status),
       };
       
-      await axios.put(`http://localhost:8080/api/users/${editingUser.id}`, updateData, {
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${editingUser.id}`, updateData, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',

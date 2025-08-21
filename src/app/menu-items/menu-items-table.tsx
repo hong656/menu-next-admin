@@ -259,7 +259,7 @@ export default function MenuItemTable(): React.ReactElement {
   const handleUpdate = async (formData: FormData) => {
   if (!editingItem) return;
   try {
-    await axios.put(`http://localhost:8080/api/menu-items/${editingItem.id}`, formData);
+    await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/menu-items/${editingItem.id}`, formData);
     
     await fetchMenuItems();
     setEditDialogOpen(false);

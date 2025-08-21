@@ -195,7 +195,7 @@ export default function OrderTable(): React.ReactElement {
   const updateOrderStatus = async (orderId: number, action: TableStatusAction) => {
     setIsLoading(true);
     try {
-      await axios.patch(`http://localhost:8080/api/orders/${orderId}`, {
+      await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}`, {
         status: action.status,
       });
       await fetchOrders();

@@ -92,8 +92,7 @@ interface ApiListResponse {
     summary: ApiSummary;
 }
 
-
-// --- 2. DATA TRANSFORMATION & MAPPING ---
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const statusMapping: { [key: number]: OrderStatus } = {
     1: 'new',
@@ -109,13 +108,21 @@ const transformSingleApiOrder = (apiOrder: ApiOrder): Order => ({
     table: apiOrder.table ? apiOrder.table.number.toString() : "Online",
     status: statusMapping[apiOrder.status] || 'pending',
     remark: apiOrder.remark,
-    items: apiOrder.orderItems.map(apiItem => ({
-        id: apiItem.id.toString(),
-        name: apiItem.menuItem.name,
-        description: apiItem.menuItem.description,
-        quantity: apiItem.quantity,
-        image: apiItem.menuItem.imageUrl,
-    })),
+    items: apiOrder.orderItems.map(apiItem => {
+        const imageUrl = apiItem.menuItem.imageUrl;
+        
+        const absoluteImageUrl = imageUrl && imageUrl.startsWith('/')
+            ? `${BACKEND_URL}${imageUrl}`
+            : imageUrl;
+
+        return {
+            id: apiItem.id.toString(),
+            name: apiItem.menuItem.name,
+            description: apiItem.menuItem.description,
+            quantity: apiItem.quantity,
+            image: absoluteImageUrl,
+        };
+    }),
 });
 
 // Transforms the LIST response from the API
@@ -280,11 +287,14 @@ const OrderDetail = ({ order, fetchState, onUpdateStatus }: {
                     {order.items.map(item => (
                         <div key={item.id} className="flex items-center space-x-4 p-2 rounded-lg border">
                             <div className="w-12 h-12 bg-gray-200 rounded-md flex-shrink-0 flex items-center justify-center">
-                                <UtensilsCrossed className="h-8 w-8 text-gray-400" />
+                                {item.image ? (
+                                    <img src={item.image} alt={item.name} className="w-12 h-12 rounded-md object-cover" />
+                                ) : (
+                                    <UtensilsCrossed className="h-8 w-8 text-gray-400" />
+                                )}
                             </div>
                             <div className="flex-grow">
                                 <p className="font-bold">{item.name}</p>
-                                <p className="text-sm text-gray-600">{item.description}</p>
                             </div>
                             <div className="font-semibold text-lg">
                                 x{item.quantity}
@@ -404,7 +414,7 @@ export default function RestaurantDashboard() {
         const numericStatus = apiStatusMapping[status];
 
         try {
-            await axios.patch(`http://localhost:8080/api/orders/${orderId}`, {
+            await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}`, {
                 status: numericStatus,
             });
             
