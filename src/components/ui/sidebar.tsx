@@ -64,10 +64,10 @@ const sidebarNavItems: NavItem[] = [
     ],
   },
   {
-    label: 'Settings',
+    label: 'Interface Settings',
     icon: Settings,
     group: 'Core Administration',
-    subItems: [{ href: '#', label: 'General Settings' }],
+    subItems: [{ href: '/general-settings', label: 'General Settings' }],
   },
 ];
 
@@ -103,7 +103,6 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
                 (sub) =>
                   pathname === sub.href || pathname.startsWith(`${sub.href}/`)
               ) ?? false;
-
             const isTopLevelActive =
               !!item.href &&
               (pathname === item.href || pathname.startsWith(`${item.href}/`));

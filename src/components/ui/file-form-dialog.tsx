@@ -239,6 +239,7 @@ export function FileFormDialog({
             <Input
               id={field.name}
               name={field.name}
+              required={field.required}
               type="file"
               className="hidden"
               accept="image/*"
