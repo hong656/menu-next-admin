@@ -367,7 +367,6 @@ export default function MenuItemTable(): React.ReactElement {
               </TableRow>
             )}
             {state !== 'loading' && pageRows.map((item, idx) => {
-              // --- CONSTRUCT THE FULL, ABSOLUTE URL ---
               const absoluteImageUrl = item.imageUrl && item.imageUrl.startsWith('/')
                 ? `${BACKEND_URL}${item.imageUrl}`
                 : item.imageUrl;

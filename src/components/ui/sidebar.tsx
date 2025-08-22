@@ -67,7 +67,10 @@ const sidebarNavItems: NavItem[] = [
     label: 'Interface Settings',
     icon: Settings,
     group: 'Core Administration',
-    subItems: [{ href: '/general-settings', label: 'General Settings' }],
+    subItems: [
+      { href: '/banners', label: 'Banners' },
+      { href: '/general-settings', label: 'General Settings' }
+    ],
   },
 ];
 
