@@ -19,6 +19,7 @@ import {
   XCircle,
   Trash2,
   Image as ImageIcon,
+  Eye,
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -34,6 +35,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 type MenuItem = {
   id: number;
   name: string;
+  type: string;
   description: string;
   priceCents: number;
   imageUrl?: string | null;
@@ -52,7 +54,6 @@ const isUrlValid = (url: string | null | undefined): url is string => {
     return typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
 }
 
-// Configuration for status badges
 const statusConfig = {
   1: { // Active
     text: 'ACTIVE',
@@ -124,6 +125,14 @@ export default function MenuItemTable(): React.ReactElement {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (previewImage) {
+      setImageSize({ width: 0, height: 0 });
+    }
+  }, [previewImage]);
 
   const [confirmationState, setConfirmationState] = useState<{
     itemId: number;
@@ -186,6 +195,7 @@ export default function MenuItemTable(): React.ReactElement {
 
   const fields: FieldConfig[] = [
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
+    { name: 'type', label: 'Type', required: true, placeholder: 'e.g., Vegetable' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
     { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
@@ -197,6 +207,7 @@ export default function MenuItemTable(): React.ReactElement {
 
   const editFields: FieldConfig[] = [
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
+    { name: 'type', label: 'Type', required: true, placeholder: 'e.g., Vegetable' },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
     { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
@@ -326,6 +337,7 @@ export default function MenuItemTable(): React.ReactElement {
               <TableHead className="w-16">#</TableHead>
               <TableHead className="text-base w-[150px]">Image</TableHead>
               <TableHead className="text-base">Name</TableHead>
+              <TableHead className="text-base">Type</TableHead>
               <TableHead className="text-base">Description</TableHead>
               <TableHead className="text-base">Price</TableHead>
               <TableHead className="text-base">Status</TableHead>
@@ -364,23 +376,34 @@ export default function MenuItemTable(): React.ReactElement {
                 <TableRow key={item.id}>
                   <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
                   <TableCell>
-                    {isUrlValid(absoluteImageUrl) ? (
-                      <NextImage
-                        src={absoluteImageUrl}
-                        alt={item.name}
-                        width={60}
-                        height={60}
-                        className="aspect-square rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="flex border border-3 border-gray-400 h-[60px] w-[60px] items-center justify-center rounded-md text-gray-400 bg-gray-400/20">
-                        <ImageIcon className="h-10 w-10" />
-                      </div>
-                    )}
+                    <div className="relative group w-[60px] h-[60px]">
+                      {isUrlValid(absoluteImageUrl) ? (
+                        <>
+                          <NextImage
+                            src={absoluteImageUrl}
+                            alt={item.name}
+                            width={60}
+                            height={60}
+                            className="aspect-square rounded-md object-cover"
+                          />
+                          <div
+                            className="absolute duration-300 ease-in-out  inset-0 hover:bg-gray-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md"
+                            onClick={() => setPreviewImage(absoluteImageUrl)}
+                          >
+                            <Eye className="text-white h-6 w-6" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex border border-3 border-gray-400 h-[60px] w-[60px] items-center justify-center rounded-md text-gray-400 bg-gray-400/20">
+                          <ImageIcon className="h-10 w-10" />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-md font-medium">{item.name}</span>
                   </TableCell>
+                  <TableCell className="max-w-xs truncate"><Badge>{item.type}</Badge></TableCell>
                   <TableCell className="max-w-xs truncate">{item.description}</TableCell>
                   <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
                   <TableCell>
@@ -482,7 +505,7 @@ export default function MenuItemTable(): React.ReactElement {
         fields={fields}
         layout={{
           fileFields: ['image'],
-          dataFields: ['name', 'description', 'priceCents', 'status']
+          dataFields: ['name', 'type', 'description', 'priceCents', 'status']
         }}
         submitLabel="Create"
         cancelLabel="Cancel"
@@ -497,7 +520,7 @@ export default function MenuItemTable(): React.ReactElement {
         fields={editFields}
         layout={{
           fileFields: ['image'],
-          dataFields: ['name', 'description', 'priceCents', 'status']
+          dataFields: ['name', 'type', 'description', 'priceCents', 'status']
         }}
         submitLabel="Update"
         cancelLabel="Cancel"
@@ -522,6 +545,61 @@ export default function MenuItemTable(): React.ReactElement {
           title={`Confirm Action: ${confirmationState?.action.label || ''}`}
           description={confirmationState?.action.confirmMessage || ''}
         />
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/95 bg-opacity-75 transition-opacity"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative w-[500px] h-[500px] flex items-center justify-center rounded-md" onClick={(e) => e.stopPropagation()}>
+            <NextImage
+              src={previewImage}
+              alt="Image Preview"
+              width={500}
+              height={500}
+              className="object-contain rounded-md"
+              onLoad={(e) => setImageSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
+            />
+            {(() => {
+              if (!imageSize.width || !imageSize.height) {
+                return null;
+              }
+
+              const scale = Math.min(500 / imageSize.width, 500 / imageSize.height);
+              const renderedWidth = imageSize.width * scale;
+              const renderedHeight = imageSize.height * scale;
+
+              const imageArea = renderedWidth * renderedHeight;
+              const containerArea = 500 * 500;
+              const imageToContainerRatio = imageArea / containerArea;
+
+              let buttonSizeClass = 'h-8 w-8';
+              let iconSizeClass = 'h-6 w-6';
+              if (imageToContainerRatio < 0.3) {
+                buttonSizeClass = 'h-6 w-6';
+                iconSizeClass = 'h-4 w-4';
+              } else if (imageToContainerRatio > 0.7) {
+                buttonSizeClass = 'h-10 w-10';
+                iconSizeClass = 'h-8 w-8';
+              }
+              
+              const topOffset = (500 - renderedHeight) / 2;
+              const rightOffset = (500 - renderedWidth) / 2;
+
+              return (
+                <Button
+                  variant="ghost"
+                  className={`absolute p-0 cursor-pointer rounded-full bg-gray-800 hover:bg-gray-700 border ${buttonSizeClass}`}
+                  style={{ top: topOffset - 16, right: rightOffset - 16 }}
+                  onClick={() => setPreviewImage(null)}
+                >
+                  <XCircle className={`${iconSizeClass} text-white`} />
+                </Button>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
