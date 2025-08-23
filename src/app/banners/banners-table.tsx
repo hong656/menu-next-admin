@@ -325,8 +325,18 @@ export default function BannerTable(): React.ReactElement {
                     <div className="relative group w-[120px] h-[60px]">
                       {isUrlValid(absolutebannerImage) ? (
                         <>
-                          <NextImage src={absolutebannerImage} alt={banner.title} width={120} height={60} className="rounded-md object-cover"/>
-                          <div className="absolute inset-0 hover:bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md" onClick={() => setPreviewImage(absolutebannerImage)}>
+                          <NextImage
+                            src={absolutebannerImage}
+                            alt={banner.title}
+                            fill
+                            className="rounded-md object-cover z-10" // <-- ADD z-10 HERE
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            priority={currentPage === 1 && idx === 0}
+                          />
+                          <div
+                            className="absolute inset-0 hover:bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md z-20" // <-- ADD z-20 HERE
+                            onClick={() => setPreviewImage(absolutebannerImage)}
+                          >
                             <Eye className="text-white h-6 w-6" />
                           </div>
                         </>
@@ -459,57 +469,64 @@ export default function BannerTable(): React.ReactElement {
       
       {previewImage && (
             <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/95 bg-opacity-75 transition-opacity"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/90 bg-opacity-75 transition-opacity"
             onClick={() => setPreviewImage(null)}
             >
-            <div className="relative w-[500px] h-[500px] flex items-center justify-center rounded-md" onClick={(e) => e.stopPropagation()}>
-                <NextImage
+            <div className="relative w-[500px] h-[250px] bg-transparent flex items-center justify-center rounded-md" onClick={(e) => e.stopPropagation()}>
+            <NextImage
                 src={previewImage}
                 alt="Image Preview"
-                width={500}
-                height={500}
+                fill
                 className="object-contain rounded-md"
+                sizes="90vw"
                 onLoad={(e) => setImageSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
-                />
-                {(() => {
-                if (!imageSize.width || !imageSize.height) {
-                    return null;
-                }
+            />
+            {(() => {
+            if (!imageSize.width || !imageSize.height) {
+                return null;
+            }
 
-                const scale = Math.min(500 / imageSize.width, 500 / imageSize.height);
-                const renderedWidth = imageSize.width * scale;
-                const renderedHeight = imageSize.height * scale;
+            const CONTAINER_WIDTH = 500;
+            const CONTAINER_HEIGHT = 250;
 
-                const imageArea = renderedWidth * renderedHeight;
-                const containerArea = 500 * 500;
-                const imageToContainerRatio = imageArea / containerArea;
+            const scale = Math.min(
+                CONTAINER_WIDTH / imageSize.width,
+                CONTAINER_HEIGHT / imageSize.height
+            );
 
-                let buttonSizeClass = 'h-8 w-8';
-                let iconSizeClass = 'h-6 w-6';
-                if (imageToContainerRatio < 0.3) {
-                    buttonSizeClass = 'h-6 w-6';
-                    iconSizeClass = 'h-4 w-4';
-                } else if (imageToContainerRatio > 0.7) {
-                    buttonSizeClass = 'h-10 w-10';
-                    iconSizeClass = 'h-8 w-8';
-                }
-                
-                const topOffset = (500 - renderedHeight) / 2;
-                const rightOffset = (500 - renderedWidth) / 2;
+            const renderedWidth = imageSize.width * scale;
+            const renderedHeight = imageSize.height * scale;
 
-                return (
-                    <Button
-                    variant="ghost"
-                    className={`absolute p-0 cursor-pointer rounded-full bg-gray-800 hover:bg-gray-700 border ${buttonSizeClass}`}
-                    style={{ top: topOffset - 16, right: rightOffset - 16 }}
-                    onClick={() => setPreviewImage(null)}
-                    >
-                    <XCircle className={`${iconSizeClass} text-white`} />
-                    </Button>
-                );
-                })()}
-            </div>
-            </div>
+            const imageArea = renderedWidth * renderedHeight;
+            const containerArea = CONTAINER_WIDTH * CONTAINER_HEIGHT; // Use correct area
+            const imageToContainerRatio = imageArea / containerArea;
+
+            let buttonSizeClass = 'h-8 w-8';
+            let iconSizeClass = 'h-6 w-6';
+            if (imageToContainerRatio < 0.3) {
+                buttonSizeClass = 'h-6 w-6';
+                iconSizeClass = 'h-8 w-8';
+            } else if (imageToContainerRatio > 0.7) {
+                buttonSizeClass = 'h-10 w-10';
+                iconSizeClass = 'h-8 w-8';
+            }
+            
+            const topOffset = (CONTAINER_HEIGHT - renderedHeight) / 2;
+            const rightOffset = (CONTAINER_WIDTH - renderedWidth) / 2;
+
+            return (
+                <Button
+                variant="ghost"
+                className={`absolute p-0 cursor-pointer rounded-full bg-gray-800 hover:bg-gray-700 border ${buttonSizeClass}`}
+                style={{ top: topOffset - 16, right: rightOffset - 16 }}
+                onClick={() => setPreviewImage(null)}
+                >
+                <XCircle className={`${iconSizeClass} text-white`} />
+                </Button>
+            );
+            })()}
+        </div>
+          </div>
         )}
     </div>
   );

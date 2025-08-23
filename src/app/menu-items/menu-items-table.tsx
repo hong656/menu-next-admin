@@ -370,7 +370,6 @@ export default function MenuItemTable(): React.ReactElement {
               const absoluteImageUrl = item.imageUrl && item.imageUrl.startsWith('/')
                 ? `${BACKEND_URL}${item.imageUrl}`
                 : item.imageUrl;
-
               return (
                 <TableRow key={item.id}>
                   <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
@@ -381,20 +380,21 @@ export default function MenuItemTable(): React.ReactElement {
                           <NextImage
                             src={absoluteImageUrl}
                             alt={item.name}
-                            width={60}
-                            height={60}
-                            className="aspect-square rounded-md object-cover"
+                            fill
+                            className="rounded-md object-cover z-10" // <-- ADD z-10 HERE
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            priority={currentPage === 1 && idx === 0}
                           />
                           <div
-                            className="absolute duration-300 ease-in-out  inset-0 hover:bg-gray-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md"
+                            className="absolute inset-0 hover:bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md z-20" // <-- ADD z-20 HERE
                             onClick={() => setPreviewImage(absoluteImageUrl)}
                           >
                             <Eye className="text-white h-6 w-6" />
                           </div>
                         </>
                       ) : (
-                        <div className="flex border border-3 border-gray-400 h-[60px] w-[60px] items-center justify-center rounded-md text-gray-400 bg-gray-400/20">
-                          <ImageIcon className="h-10 w-10" />
+                        <div className="flex h-full w-full items-center justify-center rounded-md text-gray-400 bg-gray-400/20 border-2 border-dashed">
+                          <ImageIcon className="h-8 w-8" />
                         </div>
                       )}
                     </div>
@@ -547,16 +547,16 @@ export default function MenuItemTable(): React.ReactElement {
 
       {previewImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/95 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/90 bg-opacity-75 transition-opacity"
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative w-[500px] h-[500px] flex items-center justify-center rounded-md" onClick={(e) => e.stopPropagation()}>
             <NextImage
               src={previewImage}
               alt="Image Preview"
-              width={500}
-              height={500}
+              fill
               className="object-contain rounded-md"
+              sizes="90vw"
               onLoad={(e) => setImageSize({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
             />
             {(() => {
