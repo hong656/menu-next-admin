@@ -363,7 +363,7 @@ export default function RestaurantDashboard() {
         }
 
         try {
-            const { data } = await axios.get<ApiListResponse>('http://localhost:8080/api/orders', {
+            const { data } = await axios.get<ApiListResponse>('http://localhost:8080/api/orders/all', {
                 headers: { Accept: 'application/json' },
             });
             const { orders: transformedOrders, stats: transformedStats } = transformApiListData(data);
@@ -570,7 +570,6 @@ export default function RestaurantDashboard() {
                     </AlertDialogContent>
                 </AlertDialog>
 
-                {/* --- 5. REMOVED NOTIFICATION DIALOG --- */}
             </div>
         </ProtectedRoute>
     );
