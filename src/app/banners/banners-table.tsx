@@ -110,12 +110,16 @@ export default function BannerTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   // --- STATE UPDATED FOR BANNERS ---
+  const [pagedBanners, setPagedBanners] = useState<Banner[]>([]);
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [state, setState] = useState<FetchState>('idle');
-  const [query, setQuery] = useState('');
   const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]['value']>('all');
+  const [page, setPage] = useState<number>(1); // UI page (1-based index)
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
-  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
@@ -135,23 +139,54 @@ export default function BannerTable(): React.ReactElement {
   } | null>(null);
 
   // --- API CALLS UPDATED FOR BANNERS ---
-  const fetchBanners = useCallback(async () => {
+    const fetchBanners = useCallback(async () => {
     setState('loading');
+    const params = new URLSearchParams();
+
+    // API uses 0-based page index, UI uses 1-based
+    params.append('page', (page - 1).toString()); 
+    params.append('size', rowsPerPage.toString());
+
+    if (debouncedQuery) {
+        params.append('q', debouncedQuery);
+    }
+    if (status !== 'all') {
+        const numericStatus = status === 'active' ? 1 : 2;
+        params.append('status', numericStatus.toString());
+    }
+
     try {
-      const { data } = await axios.get<Banner[]>(`${BACKEND_URL}/api/banners`, {
+      const { data } = await axios.get(`${BACKEND_URL}/api/banners?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
-      setBanners(Array.isArray(data) ? data : []);
+      // Update state with pagination data from the API response
+      setPagedBanners(Array.isArray(data.items) ? data.items : []);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.totalItems);
       setState('success');
     } catch (err) {
       console.error(err);
+      setPagedBanners([]); // Clear data on error
       setState('error');
     }
-  }, [BACKEND_URL]);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status]);
 
   useEffect(() => {
     fetchBanners();
   }, [fetchBanners]);
+ 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+      if (page !== 1) setPage(1); // Reset to page 1 when query changes
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+  }, [status, rowsPerPage]);
 
   useEffect(() => {
     if (!editDialogOpen) {
@@ -311,31 +346,30 @@ export default function BannerTable(): React.ReactElement {
           <TableBody>
             {state === 'loading' && <TableRow><TableCell colSpan={7} className="py-10 text-center">Loading banners...</TableCell></TableRow>}
             {state === 'error' && <TableRow><TableCell colSpan={7} className="py-10 text-center text-red-500">Failed to load banners.</TableCell></TableRow>}
-            {state === 'success' && pageRows.length === 0 && <TableRow><TableCell colSpan={7} className="py-10 text-center">No results found.</TableCell></TableRow>}
+            {state === 'success' && pagedBanners.length === 0 && <TableRow><TableCell colSpan={7} className="py-10 text-center">No results found.</TableCell></TableRow>}
             
-            {state === 'success' && pageRows.map((banner, idx) => {
-              const absolutebannerImage = banner.bannerImage && banner.bannerImage.startsWith('/')
+            {state === 'success' && pagedBanners.map((banner, idx) => {
+              const absoluteBannerImage = banner.bannerImage && banner.bannerImage.startsWith('/')
                 ? `${BACKEND_URL}${banner.bannerImage}`
                 : banner.bannerImage;
 
               return (
                 <TableRow key={banner.id}>
-                  <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
+                  <TableCell className='font-bold text-md'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
                   <TableCell>
                     <div className="relative group w-[120px] h-[60px]">
-                      {isUrlValid(absolutebannerImage) ? (
+                      {isUrlValid(absoluteBannerImage) ? (
                         <>
                           <NextImage
-                            src={absolutebannerImage}
+                            src={absoluteBannerImage}
                             alt={banner.title}
                             fill
-                            className="rounded-md object-cover z-10" // <-- ADD z-10 HERE
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             priority={currentPage === 1 && idx === 0}
                           />
                           <div
                             className="absolute inset-0 hover:bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md z-20" // <-- ADD z-20 HERE
-                            onClick={() => setPreviewImage(absolutebannerImage)}
+                            onClick={() => setPreviewImage(absoluteBannerImage)}
                           >
                             <Eye className="text-white h-6 w-6" />
                           </div>
@@ -375,60 +409,36 @@ export default function BannerTable(): React.ReactElement {
       
       <div className="flex items-center justify-between text-sm">
         <div className='font-bold'>
-        {filtered.length === 0
-            ? '0 of 0 row(s) selected.'
-            : `${pageRows.length} of ${filtered.length} row(s) shown.`}
+          {totalItems === 0
+            ? '0 items found.'
+            : `Showing ${((page - 1) * rowsPerPage) + 1} to ${Math.min(page * rowsPerPage, totalItems)} of ${totalItems} items.`}
         </div>
         <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-            <span className='font-bold'>Rows per page</span>
-            <select
-            value={rowsPerPage}
-            onChange={(e) => setRowsPerPage(Number(e.target.value))}
-            className="rounded-md border border-gray-700 bg-transparent px-2 py-1 focus:outline-none"
-            >
-            {[5, 10, 20, 50].map((n) => (
-                <option key={n} value={n} className="bg-gray-900">{n}</option>
-            ))}
-            </select>
+          <div className="flex items-center gap-2">
+              <span className='font-bold'>Rows per page</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                className="rounded-md border border-gray-700 bg-transparent px-2 py-1 focus:outline-none"
+              >
+                {[5, 10, 20, 50].map((n) => (
+                  <option key={n} value={n} className="bg-gray-900">{n}</option>
+                ))}
+              </select>
+          </div>
+          <div className="flex items-center gap-2">
+              <span className='font-bold'>
+                Page {page} of {totalPages}
+              </span>
+              <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
+                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
+              </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-            <span className='font-bold'>
-            Page {currentPage} of {pageCount}
-            </span>
-            <div className="ml-2 inline-flex rounded-md space-x-3">
-            <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
-                onClick={() => setPage(1)}
-                disabled={currentPage === 1}
-            >
-                <ChevronsLeft className='w-4 h-4' />
-            </button>
-            <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-            >
-                <ChevronLeft className='w-4 h-4' />
-            </button>
-            <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                disabled={currentPage === pageCount}
-            >
-                <ChevronRight className='w-4 h-4' />
-            </button>
-            <button
-                className="border cursor-pointer border-gray-700 rounded-sm px-2 py-1"
-                onClick={() => setPage(pageCount)}
-                disabled={currentPage === pageCount}
-            >
-                <ChevronsRight className='w-4 h-4' />
-            </button>
-            </div>
-        </div>
-        </div>
-    </div>
+      </div>
 
       <FileFormDialog
         open={dialogOpen}

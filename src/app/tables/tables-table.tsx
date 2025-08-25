@@ -101,11 +101,17 @@ const TableStatusBadge = ({ status }: TableStatusBadgeProps) => {
 
 
 export default function TablesTable(): React.ReactElement {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+  const [pagedTables, setPagedTables] = useState<TableEntry[]>([]);
   const [tables, setTables] = useState<TableEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [page, setPage] = useState<number>(1); // UI is 1-based index
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
-  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<TableEntry | null>(null);
@@ -119,22 +125,46 @@ export default function TablesTable(): React.ReactElement {
   // Fetches all table entries from the API
   const fetchTables = useCallback(async () => {
     setState('loading');
+    const params = new URLSearchParams();
+
+    params.append('page', (page - 1).toString());
+    params.append('size', rowsPerPage.toString());
+
+    if (debouncedQuery) {
+      params.append('q', debouncedQuery);
+    }
+
     try {
-      const { data } = await axios.get<{ data: TableEntry[] }>(`${process.env.NEXT_PUBLIC_API_URL}/api/tables`, {
+      const { data } = await axios.get(`${BACKEND_URL}/api/tables?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
-      // The actual data is nested in a "data" property
-      setTables(Array.isArray(data.data) ? data.data : []);
+      // Update state with pagination data from the API response
+      setPagedTables(Array.isArray(data.items) ? data.items : []);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.totalItems);
       setState('success');
     } catch (err) {
       console.error(err);
+      setPagedTables([]); // Clear data on error
       setState('error');
     }
-  }, []);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery]);
 
   useEffect(() => {
     fetchTables();
   }, [fetchTables]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+      if (page !== 1) setPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+  }, [rowsPerPage]);
 
   useEffect(() => {
     if (!editDialogOpen) {
@@ -142,7 +172,6 @@ export default function TablesTable(): React.ReactElement {
     }
   }, [editDialogOpen]);
 
-  // Filters tables based on the search query
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return tables;
@@ -312,14 +341,10 @@ export default function TablesTable(): React.ReactElement {
                 <TableCell colSpan={5} className="py-10 text-center text-red-500">Failed to load tables.</TableCell>
               </TableRow>
             )}
-            {state === 'success' && pageRows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center">No results.</TableCell>
-              </TableRow>
-            )}
-            {state === 'success' && pageRows.map((table, idx) => (
+            {state === 'success' && pagedTables.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center">No results.</TableCell></TableRow>}
+            {state === 'success' && pagedTables.map((table, idx) => (
               <TableRow key={table.id}>
-                <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
+                <TableCell className='font-bold text-md'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
                 <TableCell>
                   <span className="text-md font-medium">{table.number}</span>
                 </TableCell>
@@ -327,8 +352,6 @@ export default function TablesTable(): React.ReactElement {
                   <TableStatusBadge status={table.status} />
                 </TableCell>
                 <TableCell>
-                  {/* --- CHANGE HERE --- */}
-                  {/* Access table.createdAt instead of table.created_at */}
                   {new Date(table.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric', month: 'long', day: 'numeric',
                   })}
@@ -372,8 +395,10 @@ export default function TablesTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <div className='font-bold text-muted-foreground'>
-          Showing {Math.min(start + 1, filtered.length)} to {Math.min(end, filtered.length)} of {filtered.length} entries
+        <div className='font-bold'>
+          {totalItems === 0
+            ? '0 items found.'
+            : `Showing ${((page - 1) * rowsPerPage) + 1} to ${Math.min(page * rowsPerPage, totalItems)} of ${totalItems} items.`}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -390,13 +415,13 @@ export default function TablesTable(): React.ReactElement {
           </div>
           <div className="flex items-center gap-2">
             <span className='font-bold'>
-              Page {currentPage} of {pageCount}
+              Page {page} of {totalPages}
             </span>
             <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
-                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={currentPage === 1}><ChevronsLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={currentPage === pageCount}><ChevronRight className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage(pageCount)} disabled={currentPage === pageCount}><ChevronsRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
             </div>
           </div>
         </div>

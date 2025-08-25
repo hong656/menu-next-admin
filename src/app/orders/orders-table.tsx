@@ -137,11 +137,17 @@ const TableStatusBadge = ({ status }: TableStatusBadgeProps) => {
 };
 
 export default function OrderTable(): React.ReactElement {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
   const [orders, setOrders] = useState<OrderEntry[]>([]);
+  const [pagedOrders, setPagedOrders] = useState<OrderEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
-  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [page, setPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const [confirmationState, setConfirmationState] = useState<{
@@ -151,23 +157,51 @@ export default function OrderTable(): React.ReactElement {
 
   const fetchOrders = useCallback(async () => {
     setState('loading');
+    const params = new URLSearchParams();
+
+    // API uses 0-based page index, UI uses 1-based
+    params.append('page', (page - 1).toString());
+    params.append('size', rowsPerPage.toString());
+
+    if (debouncedQuery) {
+        // Assuming the API uses 'q' for table number search
+        params.append('q', debouncedQuery);
+    }
+
     try {
-      const { data } = await axios.get<{ orders: OrderEntry[] }>('http://localhost:8080/api/orders', {
+      const { data } = await axios.get(`${BACKEND_URL}/api/orders?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
       
-      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      // Update state with pagination data from the API response
+      setPagedOrders(Array.isArray(data.items) ? data.items : []);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.totalItems);
       
       setState('success');
     } catch (err) {
       console.error('Failed to fetch orders:', err);
+      setPagedOrders([]); // Clear data on error
       setState('error');
     }
-  }, []);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery]);
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+    useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+      if (page !== 1) setPage(1);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+  }, [rowsPerPage]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -263,14 +297,10 @@ export default function OrderTable(): React.ReactElement {
                 <TableCell colSpan={7} className="py-10 text-center text-red-500">Failed to load orders.</TableCell>
               </TableRow>
             )}
-            {state === 'success' && pageRows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center">No results found.</TableCell>
-              </TableRow>
-            )}
-            {state === 'success' && pageRows.map((order, idx) => (
+            {state === 'success' && pagedOrders.length === 0 && <TableRow><TableCell colSpan={7} className="py-10 text-center">No results found.</TableCell></TableRow>}
+            {state === 'success' && pagedOrders.map((order, idx) => (
               <TableRow key={order.id}>
-                <TableCell className='font-bold text-md'>{start + idx + 1}</TableCell>
+                <TableCell className='font-bold text-md'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
                 <TableCell>
                   <span className="text-md font-medium">{order.table.number}</span>
                 </TableCell>
@@ -337,8 +367,10 @@ export default function OrderTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <div className='font-bold text-muted-foreground'>
-          Showing {Math.min(start + 1, filtered.length)} to {Math.min(end, filtered.length)} of {filtered.length} entries
+        <div className='font-bold'>
+          {totalItems === 0
+            ? '0 items found.'
+            : `Showing ${((page - 1) * rowsPerPage) + 1} to ${Math.min(page * rowsPerPage, totalItems)} of ${totalItems} items.`}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -355,13 +387,13 @@ export default function OrderTable(): React.ReactElement {
           </div>
           <div className="flex items-center gap-2">
             <span className='font-bold'>
-              Page {currentPage} of {pageCount}
+              Page {page} of {totalPages}
             </span>
             <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
-                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={currentPage === 1}><ChevronsLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={currentPage === pageCount}><ChevronRight className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage(pageCount)} disabled={currentPage === pageCount}><ChevronsRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
             </div>
           </div>
         </div>
