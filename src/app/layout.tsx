@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import ConditionalLayout from "@/components/auth/conditional-layout";
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
           <AuthProvider>
             <ConditionalLayout>
               {children}
+              <Toaster richColors position="top-right" /> 
             </ConditionalLayout>
           </AuthProvider>
         </ThemeProvider>

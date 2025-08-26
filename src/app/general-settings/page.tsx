@@ -1,3 +1,8 @@
+'use client'; 
+
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import axios from 'axios';
+
 import ProtectedRoute from '@/components/auth/protected-route';
 import { Button } from "@/components/ui/button";
 import {
@@ -9,131 +14,224 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import Image from 'next/image';
+
+interface WebSetting {
+  settingKey: string;
+  settingValue: string;
+}
+
+interface SettingsMap {
+  [key: string]: string;
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const SETTING_KEYS = {
+  NAME: 'title',
+  LOGO_URL: 'logo',
+  MAIN_THEME: 'main_theme',
+};
 
 export default function GeneralSettings() {
+  const [settings, setSettings] = useState<SettingsMap>({});
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get<WebSetting[]>(`${API_BASE_URL}/api/web-settings`);
+      const settingsMap = response.data.reduce((acc: SettingsMap, setting: WebSetting) => {
+        acc[setting.settingKey] = setting.settingValue;
+        return acc;
+      }, {});
+      setSettings(settingsMap);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || 'Failed to fetch settings.');
+      } else {
+        toast.error('An unknown error occurred during fetch.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  useEffect(() => {
+    if (logoFile) {
+      const objectUrl = URL.createObjectURL(logoFile);
+      setLogoPreview(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    } else {
+      const backendLogoPath = settings[SETTING_KEYS.LOGO_URL];
+      if (backendLogoPath) {
+        const correctedPath = backendLogoPath.replace('/uploads/images/', '/images/');
+
+        const absoluteLogoUrl = correctedPath.startsWith('/')
+          ? `${API_BASE_URL}${correctedPath}`
+          : correctedPath;
+        setLogoPreview(absoluteLogoUrl);
+      } else {
+        setLogoPreview('');
+      }
+    }
+  }, [logoFile, settings[SETTING_KEYS.LOGO_URL]]);
+
+
+  const handleInputChange = (key: string, value: string) => {
+    setSettings(prevSettings => ({ ...prevSettings, [key]: value }));
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setLogoFile(event.target.files[0]);
+    }
+  };
+
+  const handleEraseLogo = () => {
+    setLogoFile(null);
+    handleInputChange(SETTING_KEYS.LOGO_URL, '');
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      setIsSaving(true);
+
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append('logo', logoFile);
+        await axios.post(`${API_BASE_URL}/api/web-settings`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+
+      const textSettings = { ...settings };
+      delete textSettings[SETTING_KEYS.LOGO_URL];
+      
+      const payload = { settings: textSettings };
+      await axios.put(`${API_BASE_URL}/api/web-settings`, payload);
+      
+      toast.success("Successfully Updated", {
+        description: `Settings have been saved.`,
+      });
+
+      setLogoFile(null);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+      await fetchSettings();
+
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || 'Failed to save settings.');
+      } else {
+        toast.error('An unknown error occurred while saving.');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading settings...</div>;
+  }
+
   return (
     <ProtectedRoute>
-        <div className="p-8">
-            <div className="mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Application Configuration</h1>
-                    <p className="text-gray-500">
-                    Manage global settings for your application.
-                    </p>
-                </div>
-                <Button className='cursor-pointer'>Save Changes</Button>
-                </div>
-
-                <div className="space-y-8">
-                {/* API Keys Section */}
-                {/* <Card className="border-gray-700">
-                    <CardHeader>
-                    <CardTitle>API Keys</CardTitle>
-                    <CardDescription>Settings related to API keys.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="firebase-key">
-                        Firebase Server Key
-                        </Label>
-                        <p className="text-sm text-gray-500">
-                        Server key for Firebase Cloud Messaging (FCM) to send push
-                        notifications. This setting is not editable from the UI.
-                        </p>
-                        <Input
-                        id="firebase-key"
-                        placeholder="Enter Firebase Server Key"
-                        className="border-gray-700"
-                        disabled // To match the "Not editable" behavior
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="google-maps-key">
-                        Google Maps API Key
-                        </Label>
-                        <p className="text-sm text-gray-500">
-                        API key for Google Maps services. This setting is not
-                        editable from the UI.
-                        </p>
-                        <Input
-                        id="google-maps-key"
-                        placeholder="Enter Google Maps API Key"
-                        className="border-gray-700"
-                        disabled // To match the "Not editable" behavior
-                        />
-                    </div>
-                    </CardContent>
-                </Card> */}
-
-                {/* General Settings Section */}
-                <Card className="border-gray-700">
-                    <CardHeader>
-                    <CardTitle>General</CardTitle>
-                    <CardDescription>
-                        Settings related to general application details.
-                    </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="app-name">
-                        Application Name
-                        </Label>
-                        <p className="text-sm text-gray-500">
-                        The official name of the application, used in titles and
-                        communications.
-                        </p>
-                        <Input
-                        id="app-name"
-                        defaultValue="My Awesome App"
-                        className="border-gray-700"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="privacy-url">
-                        Privacy Policy URL
-                        </Label>
-                        <p className="text-sm text-gray-500">
-                        Link to the Privacy Policy page.
-                        </p>
-                        <Input
-                        id="privacy-url"
-                        defaultValue="https://example.com/privacy"
-                        className="border-gray-700"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="support-email">
-                        Support Email
-                        </Label>
-                        <p className="text-sm text-gray-500">
-                        The primary email address for customer support inquiries.
-                        </p>
-                        <Input
-                        id="support-email"
-                        type="email"
-                        defaultValue="support@example.com"
-                        className="border-gray-700"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="terms-url">
-                        Terms of Service URL
-                        </Label>
-                        <p className="text-sm text-gray-500">
-                        Link to the Terms of Service page.
-                        </p>
-                        <Input
-                        id="terms-url"
-                        defaultValue="https://example.com/terms"
-                        className="border-gray-700"
-                        />
-                    </div>
-                    </CardContent>
-                </Card>
-                </div>
+      <div className="p-8">
+        <div className="mx-auto max-w-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold">Web Configuration</h1>
+              <p className="text-gray-500">Manage general settings for your application.</p>
             </div>
+            <Button onClick={handleSaveChanges} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+
+          <div className="space-y-8">
+            <Card className="border-gray-700">
+                <CardHeader>
+                    <CardTitle>Branding & Theme</CardTitle>
+                    <CardDescription>Customize the look and feel of your application.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="app-name">Application Name</Label>
+                      <Input
+                          id="app-name"
+                          value={settings[SETTING_KEYS.NAME] || ''}
+                          onChange={(e) => handleInputChange(SETTING_KEYS.NAME, e.target.value)}
+                          className="border-gray-700"
+                          disabled={isSaving}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <Label>Application Logo</Label>
+                        {logoPreview && (
+                          <div className="relative mb-4 h-20 w-20 rounded-md border border-gray-500 p-1">
+                            <Image
+                                src={logoPreview}
+                                alt="Logo Preview"
+                                fill
+                                sizes="80px"
+                                className="object-contain"
+                            />
+                          </div>
+                        )}
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                id="logo-file"
+                                type="file"
+                                accept="image/png, image/jpeg, image/svg+xml"
+                                ref={logoInputRef}
+                                onChange={handleFileSelect}
+                                className="border-gray-700 flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file-text-sm file:font-semibold file:bg-primary-foreground file:text-primary hover:file:bg-primary/90"
+                                disabled={isSaving}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleEraseLogo}
+                                disabled={isSaving || !settings[SETTING_KEYS.LOGO_URL]}
+                            >
+                                Erase
+                            </Button>
+                        </div>
+                        <p className="text-sm text-gray-500">Select a new logo file or erase the existing one.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="main-theme">Main Theme Color</Label>
+                      <Input
+                          id="main-theme"
+                          value={settings[SETTING_KEYS.MAIN_THEME] || ''}
+                          onChange={(e) => handleInputChange(SETTING_KEYS.MAIN_THEME, e.target.value)}
+                          placeholder="e.g., dark or #1a202c"
+                          className="border-gray-700"
+                          disabled={isSaving}
+                      />
+                    </div>
+                </CardContent>
+            </Card>
+          </div>
         </div>
+      </div>
     </ProtectedRoute>
   );
 }

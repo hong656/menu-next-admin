@@ -17,12 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// --- 1. IMPORT TOAST AND TOASTER ---
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-
-// ... (All your interfaces and helper functions remain the same) ...
-// (Order interfaces, Api interfaces, transform functions, DashboardHeader, StatCard, OrderListItem, etc.)
 
 type OrderStatus = 'new' | 'pending' | 'completed' | 'rejected';
 
@@ -51,7 +47,6 @@ interface OrderStats {
     canceled: number;
 }
 
-// API-level interfaces
 interface ApiMenuItem {
     id: number;
     name: string;
@@ -101,7 +96,6 @@ const statusMapping: { [key: number]: OrderStatus } = {
     4: 'rejected',
 };
 
-// Transforms a SINGLE order from the API
 const transformSingleApiOrder = (apiOrder: ApiOrder): Order => ({
     id: apiOrder.id.toString(),
     timestamp: new Date(apiOrder.placedAt),
@@ -125,7 +119,6 @@ const transformSingleApiOrder = (apiOrder: ApiOrder): Order => ({
     }),
 });
 
-// Transforms the LIST response from the API
 const transformApiListData = (apiData: ApiListResponse): { orders: Order[], stats: OrderStats } => {
     const orders: Order[] = apiData.orders.map(transformSingleApiOrder);
 
@@ -139,9 +132,6 @@ const transformApiListData = (apiData: ApiListResponse): { orders: Order[], stat
 
     return { orders, stats };
 };
-
-
-// --- 3. HELPER COMPONENTS ---
 
 const DashboardHeader = ({
     currentTime,
@@ -329,11 +319,8 @@ const OrderDetail = ({ order, fetchState, onUpdateStatus }: {
     );
 };
 
-
-// --- 4. MAIN DASHBOARD COMPONENT ---
-
 export default function RestaurantDashboard() {
-    // --- State Management ---
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     const [currentTime, setCurrentTime] = useState(new Date());
     const [orders, setOrders] = useState<Order[]>([]);
     const [detailedOrder, setDetailedOrder] = useState<Order | null>(null);
@@ -390,7 +377,7 @@ export default function RestaurantDashboard() {
     const fetchOrderDetails = async (id: string) => {
         setDetailFetchState('loading');
         try {
-            const { data } = await axios.get<ApiOrder>(`http://localhost:8080/api/orders/${id}`);
+            const { data } = await axios.get<ApiOrder>(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${id}`);
             setDetailedOrder(transformSingleApiOrder(data));
             setDetailFetchState('success');
         } catch (error) {
@@ -418,7 +405,6 @@ export default function RestaurantDashboard() {
                 status: numericStatus,
             });
             
-            // --- 2. SHOW SUCCESS TOAST ---
             toast.success("Update Successful", {
                 description: `Order #${orderId} has been set to '${status}'.`,
             });
@@ -431,7 +417,6 @@ export default function RestaurantDashboard() {
         } catch (error) {
             console.error(`Failed to update order ${orderId}:`, error);
             
-            // --- 3. SHOW ERROR TOAST ---
             toast.error("Update Failed", {
                 description: `There was an error updating order #${orderId}. Please try again.`,
             });
@@ -485,7 +470,6 @@ export default function RestaurantDashboard() {
     return (
         <ProtectedRoute>
             <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
-                {/* --- 4. ADD TOASTER COMPONENT HERE --- */}
                 <Toaster richColors position="top-right" />
                 
                 <DashboardHeader 
