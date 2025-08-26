@@ -182,17 +182,18 @@ export default function GeneralSettings() {
                     
                     <div className="space-y-2">
                         <Label>Application Logo</Label>
-                        {logoPreview && (
-                          <div className="relative mb-4 h-20 w-20 rounded-md border border-gray-500 p-1">
-                            <Image
-                                src={logoPreview}
-                                alt="Logo Preview"
-                                fill
-                                sizes="80px"
-                                className="object-contain"
-                            />
-                          </div>
-                        )}
+                        <div className='flex justify-center'>
+                          {logoPreview && (
+                            <div className="relative mb-4 h-40 w-40 rounded-md border border-gray-500 p-1">
+                              <Image
+                                  src={logoPreview}
+                                  alt="Logo Preview"
+                                  fill
+                                  className="object-contain"
+                              />
+                            </div>
+                          )}
+                        </div>
                         <div className="flex items-center space-x-2">
                             <Input
                                 id="logo-file"
@@ -200,7 +201,7 @@ export default function GeneralSettings() {
                                 accept="image/png, image/jpeg, image/svg+xml"
                                 ref={logoInputRef}
                                 onChange={handleFileSelect}
-                                className="border-gray-700 flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file-text-sm file:font-semibold file:bg-primary-foreground file:text-primary hover:file:bg-primary/90"
+                                className="cursor-pointer pt-[3px] border-gray-700 flex-grow file:mr-2 file:px-4 file:rounded-md file:border-0 file-text-sm file:font-semibold file:bg-gray-800/50 file:text-primary"
                                 disabled={isSaving}
                             />
                             <Button
@@ -209,6 +210,7 @@ export default function GeneralSettings() {
                                 size="sm"
                                 onClick={handleEraseLogo}
                                 disabled={isSaving || !settings[SETTING_KEYS.LOGO_URL]}
+                                className='!bg-red-500 text-white cursor-pointer'
                             >
                                 Erase
                             </Button>
