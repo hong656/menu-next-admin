@@ -12,8 +12,9 @@ import {
   Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link'; // Use Next.js Link component for client-side navigation
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {useTranslations} from 'next-intl';
 
 type SubNavItem = {
   href: string;
@@ -34,49 +35,51 @@ type SidebarProps = {
   setIsSidebarOpen: Dispatch<SetStateAction<boolean>>;
 };
 
-const sidebarNavItems: NavItem[] = [
-  {
-    label: 'Dashboard',
-    icon: Home,
-    group: 'Overview',
-    subItems: [
-      { href: '/', label: 'Home' },
-      { href: '/dashboard', label: 'Dashboard' },
-    ],
-  },
-  {
-    label: 'Store Management',
-    icon: ShoppingBasket,
-    group: 'Product',
-    subItems: [
-      { href: '/menu-items', label: 'Menu Items' },
-      { href: '/tables', label: 'Tables' },
-      { href: '/orders', label: 'Orders' },
-    ],
-  },
-  {
-    label: 'Authentication',
-    icon: Lock,
-    group: 'Core Administration',
-    subItems: [
-      // { href: '#', label: 'Role & Permission' },
-      { href: '/system-users', label: 'System Users' },
-    ],
-  },
-  {
-    label: 'Interface Settings',
-    icon: Settings,
-    group: 'Core Administration',
-    subItems: [
-      { href: '/banners', label: 'Banners' },
-      { href: '/general-settings', label: 'General Settings' }
-    ],
-  },
-];
-
 const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
+  const t = useTranslations('Sidebar');
   const [openItems, setOpenItems] = useState<string[]>([]);
   const pathname = usePathname();
+
+  const sidebarNavItems: NavItem[] = [
+    {
+      label: t('Dashboard'),
+      icon: Home,
+      group: 'Overview',
+      subItems: [
+        { href: '/', label: t('home') },
+        { href: '/dashboard', label: t('Dashboard') },
+      ],
+    },
+    {
+      label: t('Store Management'),
+      icon: ShoppingBasket,
+      group: 'Product',
+      subItems: [
+        { href: '/menu-items', label: 'Menu Items' },
+        { href: '/menu-types', label: 'Menu Types' },
+        { href: '/tables', label: 'Tables' },
+        { href: '/orders', label: 'Orders' },
+      ],
+    },
+    {
+      label: t('Authentication'),
+      icon: Lock,
+      group: 'Core Administration',
+      subItems: [
+        // { href: '#', label: 'Role & Permission' },
+        { href: '/system-users', label: 'System Users' },
+      ],
+    },
+    {
+      label: t('Interface Settings'),
+      icon: Settings,
+      group: 'Core Administration',
+      subItems: [
+        { href: '/banners', label: 'Banners' },
+        { href: '/general-settings', label: 'General Settings' }
+      ],
+    },
+  ];
 
   const toggleItem = (label: string) => {
     setOpenItems((prev) =>

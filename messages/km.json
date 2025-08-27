@@ -1,5 +1,15 @@
 {
     "Header": {
         "logout": "ចាកចេញ"
+    },
+    "Sidebar": {
+        "Dashboard": "ផ្ទាំងគ្រប់គ្រង",
+        "home": "ទំព័រដើម",
+
+        "Store Management": "ការគ្រប់គ្រងហាង",
+
+        "Authentication": "ការផ្ទៀងផ្ទាត់",
+
+        "Interface Settings": "ការកំណត់អន្តរកម្ម"
     }
 }

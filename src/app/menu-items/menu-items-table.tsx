@@ -43,11 +43,16 @@ import {
 type MenuItem = {
   id: number;
   name: string;
-  type: string;
+  menuType: MenuType;
   description: string;
   priceCents: number;
   imageUrl?: string | null;
   status: number;
+};
+
+type MenuType = {
+  id: number;
+  name: string;
 };
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
@@ -124,6 +129,7 @@ export default function MenuItemTable(): React.ReactElement {
 
   const [pagedMenuItems, setPagedMenuItems] = useState<MenuItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuTypes, setMenuTypes] = useState<MenuType[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(query);
@@ -201,6 +207,23 @@ export default function MenuItemTable(): React.ReactElement {
     if(page !== 1) setPage(1);
   }, [status, rowsPerPage]);
 
+  const fetchMenuTypes = async () => {
+    try {
+      const { data } = await axios.get(`${BACKEND_URL}/api/menu-types`);
+      const activeTypes = data.filter((type: { status: number }) => type.status === 1);
+      setMenuTypes(activeTypes);
+    } catch (error) {
+      console.error("Failed to fetch menu types:", error);
+      toast.error("Failed to load menu categories", {
+        description: "Could not load categories for the dropdown. Please try refreshing.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchMenuTypes();
+  }, []);
+
   useEffect(() => {
     if (!editDialogOpen) {
       setEditingItem(null);
@@ -239,7 +262,17 @@ export default function MenuItemTable(): React.ReactElement {
 
   const fields: FieldConfig[] = [
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
-    { name: 'type', label: 'Type', required: true, placeholder: 'e.g., Vegetable' },
+    {
+      name: 'menuTypeId',
+      label: 'Type',
+      required: true,
+      type: 'select',
+      placeholder: 'Select a type',
+      options: menuTypes.map(type => ({
+        label: type.name,
+        value: String(type.id)
+      }))
+    },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
     { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
@@ -251,7 +284,17 @@ export default function MenuItemTable(): React.ReactElement {
 
   const editFields: FieldConfig[] = [
     { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
-    { name: 'type', label: 'Type', required: true, placeholder: 'e.g., Vegetable' },
+    {
+      name: 'menuTypeId',
+      label: 'Type',
+      required: true,
+      type: 'select',
+      placeholder: 'Select a type',
+      options: menuTypes.map(type => ({
+        label: type.name,
+        value: String(type.id)
+      }))
+    },
     { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
     { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
     { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
@@ -449,7 +492,9 @@ export default function MenuItemTable(): React.ReactElement {
                   <TableCell>
                     <span className="text-md font-medium">{item.name}</span>
                   </TableCell>
-                  <TableCell className="max-w-xs truncate"><Badge>{item.type}</Badge></TableCell>
+                  <TableCell>
+                    <Badge>{item.menuType?.name || 'N/A'}</Badge>
+                  </TableCell>
                   <TableCell className="max-w-xs truncate">{item.description}</TableCell>
                   <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
                   <TableCell>
@@ -535,7 +580,7 @@ export default function MenuItemTable(): React.ReactElement {
         fields={fields}
         layout={{
           fileFields: ['image'],
-          dataFields: ['name', 'type', 'description', 'priceCents', 'status']
+          dataFields: ['name', 'menuTypeId', 'description', 'priceCents', 'status']
         }}
         submitLabel="Create"
         cancelLabel="Cancel"
@@ -550,7 +595,7 @@ export default function MenuItemTable(): React.ReactElement {
         fields={editFields}
         layout={{
           fileFields: ['image'],
-          dataFields: ['name', 'type', 'description', 'priceCents', 'status']
+          dataFields: ['name', 'menuTypeId', 'description', 'priceCents', 'status']
         }}
         submitLabel="Update"
         cancelLabel="Cancel"
@@ -559,8 +604,7 @@ export default function MenuItemTable(): React.ReactElement {
           description: editingItem.description,
           priceCents: String(editingItem.priceCents),
           status: String(editingItem.status),
-          
-          // THE FIX: Create the full URL here, before it ever reaches the dialog.
+          menuTypeId: String(editingItem.menuType?.id),
           image: editingItem.imageUrl && editingItem.imageUrl.startsWith('/')
               ? `${BACKEND_URL}${editingItem.imageUrl}`
               : editingItem.imageUrl ?? '',

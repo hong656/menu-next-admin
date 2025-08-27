@@ -1,5 +1,16 @@
 {
     "Header": {
         "logout": "Logout"
+    },
+    "Sidebar": {
+        "Dashboard": "Dashboard",
+        "home": "Home",
+
+        "Store Management": "Store Management",
+
+        "Authentication": "Authentication",
+
+        "Interface Settings": "Interface Settings"
     }
+    
 }
