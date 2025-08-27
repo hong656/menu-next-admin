@@ -59,7 +59,7 @@ const sidebarNavItems: NavItem[] = [
     icon: Lock,
     group: 'Core Administration',
     subItems: [
-      { href: '#', label: 'Role & Permission' },
+      // { href: '#', label: 'Role & Permission' },
       { href: '/system-users', label: 'System Users' },
     ],
   },

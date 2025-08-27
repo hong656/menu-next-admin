@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ModeToggle } from '../mode-toggle';
 import { cn } from '@/lib/utils';
+import {useTranslations} from 'next-intl';
+import LocaleSwitcher from '../button-lan';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -15,6 +17,7 @@ interface HeaderProps {
 }
 
 const Header = ({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
+  const t = useTranslations('Header');
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
@@ -75,6 +78,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
           <User className="h-4 w-4" />
           <span>{user?.username || 'User'}</span>
         </div>
+        <LocaleSwitcher />
         <Button
           variant="outline"
           size="sm"
@@ -82,7 +86,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
           className="flex items-center space-x-2"
         >
           <LogOut className="h-4 w-4" />
-          <span>Logout</span>
+          <span>{t('logout')}</span>
         </Button>
       </div>
     </header>

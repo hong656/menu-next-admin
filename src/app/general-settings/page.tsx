@@ -181,7 +181,7 @@ export default function GeneralSettings() {
             <CardContent className="space-y-6">
               
               <div className="space-y-2">
-                <Label htmlFor="app-name">Application Name</Label>
+                <Label htmlFor="app-name">Website Name</Label>
                 <Input
                   id="app-name"
                   value={settings[SETTING_KEYS.NAME] || ''}
@@ -192,7 +192,7 @@ export default function GeneralSettings() {
               </div>
               
               <div className="space-y-3">
-                <Label>Application Logo</Label>
+                <Label>Website Logo</Label>
                 <div className="flex items-center gap-4">
                   {logoPreview ? (
                     <div className="relative h-20 w-20 flex-shrink-0 rounded-md border border-gray-500 p-1">

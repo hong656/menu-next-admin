@@ -31,6 +31,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type MenuItem = {
   id: number;
@@ -46,8 +54,8 @@ type FetchState = 'idle' | 'loading' | 'error' | 'success';
 
 const STATUS_OPTIONS = [
   { label: 'All', value: 'all' },
-  { label: 'Available', value: 'available' },
-  { label: 'Unavailable', value: 'unavailable' },
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' },
 ] as const;
 
 const isUrlValid = (url: string | null | undefined): url is string => {
@@ -94,7 +102,6 @@ type MenuItemStatusBadgeProps = {
   status: number | null;
 };
 
-// Component to render a status badge
 const MenuItemStatusBadge = ({ status }: MenuItemStatusBadgeProps) => {
   const currentStatus = status && statusConfig[status as Status] ? statusConfig[status as Status] : statusConfig[2];
 
@@ -155,7 +162,7 @@ export default function MenuItemTable(): React.ReactElement {
         params.append('q', debouncedQuery);
     }
     if (status !== 'all') {
-        const numericStatus = status === 'available' ? 1 : 2;
+        const numericStatus = status === 'active' ? 1 : 2;
         params.append('status', numericStatus.toString());
     }
 
@@ -213,7 +220,7 @@ export default function MenuItemTable(): React.ReactElement {
     }
 
     if (status !== 'all') {
-      const numericStatus = status === 'available' ? 1 : 2;
+      const numericStatus = status === 'inactive' ? 1 : 2;
       list = list.filter((item) => item.status === numericStatus);
     }
 
@@ -338,29 +345,32 @@ export default function MenuItemTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <input
+        <div className='flex'>
+          <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter by name or description..."
-            className="mr-3 w-64 rounded-md border border-gray-700 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className='mr-3'
           />
-          <select
+          <Select
             value={status}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === 'all' || val === 'available' || val === 'unavailable') {
-                setStatus(val);
+            onValueChange={(value) => {
+              if (value === 'all' || value === 'active' || value === 'inactive') {
+                setStatus(value);
               }
             }}
-            className="rounded-md border border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-gray-900">
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
           <BadgePlus /> New
@@ -485,15 +495,23 @@ export default function MenuItemTable(): React.ReactElement {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className='font-bold'>Rows per page</span>
-            <select
-              value={rowsPerPage}
-              onChange={(e) => setRowsPerPage(Number(e.target.value))}
-              className="rounded-md border border-gray-700 bg-transparent px-2 py-1 focus:outline-none"
+            <Select
+              value={String(rowsPerPage)}
+              onValueChange={(value) => {
+                setRowsPerPage(Number(value));
+              }}
             >
-              {[5, 10, 20, 50].map((n) => (
-                <option key={n} value={n} className="bg-gray-900">{n}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={rowsPerPage} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[5, 10, 20, 50].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-2">
             <span className='font-bold'>
