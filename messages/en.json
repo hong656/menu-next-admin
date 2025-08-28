@@ -7,10 +7,17 @@
         "home": "Home",
 
         "Store Management": "Store Management",
+        "menu_items": "Menu Items",
+        "menu_types": "Menu Types",
+        "tables": "Tables",
+        "orders": "Orders",
 
         "Authentication": "Authentication",
+        "system_users": "System Users",
 
-        "Interface Settings": "Interface Settings"
+        "Interface Settings": "Interface Settings",
+        "banner": "Banners",
+        "setting": "General Settings"
     }
     
 }

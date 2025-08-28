@@ -55,10 +55,10 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
       icon: ShoppingBasket,
       group: 'Product',
       subItems: [
-        { href: '/menu-items', label: 'Menu Items' },
-        { href: '/menu-types', label: 'Menu Types' },
-        { href: '/tables', label: 'Tables' },
-        { href: '/orders', label: 'Orders' },
+        { href: '/menu-items', label: t('menu_items') },
+        { href: '/menu-types', label: t('menu_types') },
+        { href: '/tables', label: t('tables') },
+        { href: '/orders', label: t('orders') },
       ],
     },
     {
@@ -67,7 +67,7 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
       group: 'Core Administration',
       subItems: [
         // { href: '#', label: 'Role & Permission' },
-        { href: '/system-users', label: 'System Users' },
+        { href: '/system-users', label: t('system_users') },
       ],
     },
     {
@@ -75,8 +75,8 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
       icon: Settings,
       group: 'Core Administration',
       subItems: [
-        { href: '/banners', label: 'Banners' },
-        { href: '/general-settings', label: 'General Settings' }
+        { href: '/banners', label: t('banner') },
+        { href: '/general-settings', label: t('setting') }
       ],
     },
   ];

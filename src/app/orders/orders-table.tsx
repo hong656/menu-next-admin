@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { Input } from '@/components/ui/input'
 
 type OrderItem = {
     id: number;
@@ -265,11 +266,11 @@ export default function OrderTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <input
+        <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter by table number..."
-          className="w-64 rounded-md border border-gray-700 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-64"
         />
       </div>
 

@@ -7,9 +7,16 @@
         "home": "ទំព័រដើម",
 
         "Store Management": "ការគ្រប់គ្រងហាង",
+        "menu_items": "មុខម្ហូប",
+        "menu_types": "ប្រភេទមុខម្ហូប",
+        "tables": "តុ",
+        "orders": "ការបញ្ជាទិញ",
 
         "Authentication": "ការផ្ទៀងផ្ទាត់",
+        "system_users": "អ្នកប្រើប្រាស់ប្រព័ន្ធ",
 
-        "Interface Settings": "ការកំណត់អន្តរកម្ម"
+        "Interface Settings": "ការកំណត់អន្តរកម្ម",
+        "banner": "ផ្ទាំង",
+        "setting": "ការកំណត់ទូទៅ"
     }
 }

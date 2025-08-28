@@ -28,6 +28,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import Link from 'next/link';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { Input } from '@/components/ui/input'
 
 // --- CHANGE HERE ---
 type TableEntry = {
@@ -308,11 +309,11 @@ export default function TablesTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <input
+        <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter by table number..."
-          className="w-64 rounded-md border border-gray-700 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-64"
         />
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
           <BadgePlus /> New

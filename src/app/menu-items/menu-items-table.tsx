@@ -144,10 +144,22 @@ export default function MenuItemTable(): React.ReactElement {
   const [isLoading, setIsLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+
+  const handleClosePreview = useCallback(() => {
+    setIsPreviewVisible(false);
+    const timer = setTimeout(() => {
+      setPreviewImage(null);
+    }, 300); // Corresponds to the transition duration
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (previewImage) {
       setImageSize({ width: 0, height: 0 });
+      // For fade-in effect
+      const timer = setTimeout(() => setIsPreviewVisible(true), 10);
+      return () => clearTimeout(timer);
     }
   }, [previewImage]);
 
@@ -622,10 +634,19 @@ export default function MenuItemTable(): React.ReactElement {
 
       {previewImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/90 bg-opacity-75 transition-opacity"
-          onClick={() => setPreviewImage(null)}
+          className={cn(
+            "fixed inset-0 z-50 flex items-center justify-center bg-gray-900/90 transition-opacity duration-300",
+            isPreviewVisible ? "opacity-100" : "opacity-0"
+          )}
+          onClick={handleClosePreview}
         >
-          <div className="relative w-[500px] h-[500px] flex items-center justify-center rounded-md" onClick={(e) => e.stopPropagation()}>
+          <div
+            className={cn(
+              "relative w-[500px] h-[500px] flex items-center justify-center rounded-md transition-all duration-300",
+              isPreviewVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
             <NextImage
               src={previewImage}
               alt="Image Preview"
@@ -665,7 +686,7 @@ export default function MenuItemTable(): React.ReactElement {
                   variant="ghost"
                   className={`absolute p-0 cursor-pointer rounded-full bg-gray-800 hover:bg-gray-700 border ${buttonSizeClass}`}
                   style={{ top: topOffset - 16, right: rightOffset - 16 }}
-                  onClick={() => setPreviewImage(null)}
+                  onClick={handleClosePreview}
                 >
                   <XCircle className={`${iconSizeClass} text-white`} />
                 </Button>
