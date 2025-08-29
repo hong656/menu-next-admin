@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const { login } = useAuth();
@@ -18,19 +17,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
       const success = await login(username, password);
       if (success) {
         router.push('/');
-      } else {
-        setError('Invalid username or password');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An error occurred during login');
     } finally {
       setIsLoading(false);
     }
@@ -107,18 +102,6 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
-
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="flex">
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    {error}
-                  </h3>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div>
             <Button

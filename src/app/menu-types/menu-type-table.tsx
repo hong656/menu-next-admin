@@ -28,7 +28,7 @@ import {
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { Input } from '@/components/ui/input'; // Assuming you have a Shadcn Input
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -37,7 +37,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"; // Using Shadcn Select
 
-// --- MODIFIED: Define the shape of a MenuType object ---
 type MenuType = {
   id: number;
   name: string;

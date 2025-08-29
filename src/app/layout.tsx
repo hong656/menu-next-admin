@@ -32,8 +32,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <AuthProvider>
               <ConditionalLayout>
                 {children}
-                <Toaster richColors position="top-right" />
               </ConditionalLayout>
+              <Toaster richColors position="top-right" />
             </AuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

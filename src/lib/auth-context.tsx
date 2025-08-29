@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -119,11 +120,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           role: 'user'
         });
         scheduleAutoLogout(response.data.token);
+        toast.success('Login Successful');
         return true;
       }
+      toast.error('Login Failed', {
+        description: 'Invalid username or password.',
+      });
       return false;
     } catch (error) {
       console.error('Login error:', error);
+      toast.error('Login Failed', {
+        description: 'Invalid username or password.',
+      });
       return false;
     } finally {
       setLoading(false);

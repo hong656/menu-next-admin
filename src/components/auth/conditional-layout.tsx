@@ -32,7 +32,6 @@ export default function ConditionalLayout({
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
       />
       <div
         className={cn(
