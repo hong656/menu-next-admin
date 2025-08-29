@@ -47,12 +47,12 @@ const statusConfig = {
   1: { // Active
     text: 'ACTIVE',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
+    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
   },
   2: { // Inactive
     text: 'INACTIVE',
     classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-    icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
+    icon: <XCircle className="h-3.5 w-3.5" />,
   },
   3: { // Deleted
     text: 'Delete',

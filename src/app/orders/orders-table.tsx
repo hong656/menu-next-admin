@@ -67,22 +67,22 @@ const statusConfig = {
   1: {
     text: 'Received',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <XCircle className="!h-4 !w-4 fill-emerald-400 text-emerald-400" />,
+    icon: <XCircle className="!h-4 !w-4" />,
   },
   2: {
     text: 'Preparing',
     classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-    icon: <Clock9 className="!h-4 !w-4 text-yellow-400" />,
+    icon: <Clock9 className="!h-4 !w-4" />,
   },
   3: {
     text: 'Completed',
     classes: 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-400',
-    icon: <CheckCircle2 className="!h-4 !w-4 text-blue-400" />,
+    icon: <CheckCircle2 className="!h-4 !w-4" />,
   },
   4: {
     text: 'Canceled',
     classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
-    icon: <Trash2 className="!h-4 !w-4 fill-red-400 text-red-700" />,
+    icon: <Trash2 className="!h-4 !w-4" />,
   },
 } as const;
 

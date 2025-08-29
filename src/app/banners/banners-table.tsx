@@ -20,6 +20,7 @@ import {
   Trash2,
   Image as ImageIcon,
   Eye,
+  Filter,
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -30,6 +31,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
 
 // --- NEW BANNER TYPE ---
 type Banner = {
@@ -59,12 +70,12 @@ const statusConfig = {
   1: { // Active
     text: 'ACTIVE',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
+    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
   },
   2: { // Inactive
     text: 'INACTIVE',
     classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-    icon: <XCircle className="h-3.5 w-3.5 fill-yellow-400 text-yellow-700" />,
+    icon: <XCircle className="h-3.5 w-3.5" />,
   },
   3: { // Deleted
     text: 'DELETE',
@@ -113,9 +124,10 @@ export default function BannerTable(): React.ReactElement {
   const [pagedBanners, setPagedBanners] = useState<Banner[]>([]);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(query);
-  const [banners, setBanners] = useState<Banner[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]['value']>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [tempStatus, setTempStatus] = useState(status);
   const [page, setPage] = useState<number>(1); // UI page (1-based index)
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -151,7 +163,7 @@ export default function BannerTable(): React.ReactElement {
   } | null>(null);
 
   // --- API CALLS UPDATED FOR BANNERS ---
-    const fetchBanners = useCallback(async () => {
+  const fetchBanners = useCallback(async () => {
     setState('loading');
     const params = new URLSearchParams();
 
@@ -160,7 +172,7 @@ export default function BannerTable(): React.ReactElement {
     params.append('size', rowsPerPage.toString());
 
     if (debouncedQuery) {
-        params.append('q', debouncedQuery);
+        params.append('search', debouncedQuery);
     }
     if (status !== 'all') {
         const numericStatus = status === 'active' ? 1 : 2;
@@ -205,33 +217,6 @@ export default function BannerTable(): React.ReactElement {
       setEditingBanner(null);
     }
   }, [editDialogOpen]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = banners;
-
-    if (q) {
-      // Filter by title
-      list = list.filter((banner) => banner.title.toLowerCase().includes(q));
-    }
-
-    if (status !== 'all') {
-      const numericStatus = status === 'active' ? 1 : 2;
-      list = list.filter((banner) => banner.status === numericStatus);
-    }
-
-    return list;
-  }, [banners, query, status]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const currentPage = Math.min(page, pageCount);
-  const start = (currentPage - 1) * rowsPerPage;
-  const end = start + rowsPerPage;
-  const pageRows = filtered.slice(start, end);
-
-  useEffect(() => {
-    setPage(1);
-  }, [query, status, rowsPerPage]);
 
   // --- FORM FIELDS UPDATED FOR BANNERS ---
   const fields: FieldConfig[] = [
@@ -299,6 +284,13 @@ export default function BannerTable(): React.ReactElement {
     }
   };
   
+  const handleFilterOpenChange = (open: boolean) => {
+    if (open) {
+      setTempStatus(status);
+    }
+    setFilterOpen(open);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
@@ -320,22 +312,64 @@ export default function BannerTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <input
+        <div className='flex'>
+          <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter by title..."
-            className="mr-3 w-64 rounded-md border border-gray-700 px-3 py-2 text-sm"
+            className="mr-3 w-60"
           />
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as any)}
-            className="rounded-md border border-gray-700 px-3 py-2 text-sm"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-gray-900">{opt.label}</option>
-            ))}
-          </select>
+          <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="space-y-3">
+                <Label htmlFor="status-filter" className="text-sm font-medium">
+                  Status
+                </Label>
+                <Select
+                  value={tempStatus}
+                  onValueChange={(value) => {
+                    if (value === 'all' || value === 'active' || value === 'inactive') {
+                      setTempStatus(value);
+                    }
+                  }}
+                >
+                  <SelectTrigger 
+                    id="status-filter" 
+                    className="border-gray-300 w-50"
+                  >
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((opt) => (
+                      <SelectItem 
+                        key={opt.value} 
+                        value={opt.value}
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>Cancel</Button>
+                <Button onClick={() => {
+                  setStatus(tempStatus);
+                  setFilterOpen(false);
+                }}
+                className='border cursor-pointer h-8'>Apply</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
           <BadgePlus /> New
@@ -350,8 +384,7 @@ export default function BannerTable(): React.ReactElement {
               <TableHead className="text-base w-[150px]">Image</TableHead>
               <TableHead className="text-base">Title</TableHead>
               <TableHead className="text-base">Status</TableHead>
-              <TableHead className="text-base">Created At</TableHead>
-              <TableHead className="text-base">Updated At</TableHead>
+              <TableHead className="text-base">Date</TableHead>
               <TableHead className="text-base">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -377,7 +410,7 @@ export default function BannerTable(): React.ReactElement {
                             alt={banner.title}
                             fill
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            priority={currentPage === 1 && idx === 0}
+                            priority={page === 1 && idx === 0}
                           />
                           <div
                             className="absolute inset-0 hover:bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md z-20" // <-- ADD z-20 HERE
@@ -395,8 +428,9 @@ export default function BannerTable(): React.ReactElement {
                   </TableCell>
                   <TableCell><span className="text-md font-medium">{banner.title}</span></TableCell>
                   <TableCell><StatusBadge status={banner.status} /></TableCell>
-                  <TableCell className='text-sm text-gray-400'>{formatDate(banner.createdAt)}</TableCell>
-                  <TableCell className='text-sm text-gray-400'>{formatDate(banner.updatedAt)}</TableCell>
+                  <TableCell className='text-sm'>
+                    {new Date(banner.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -427,16 +461,24 @@ export default function BannerTable(): React.ReactElement {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-              <span className='font-bold'>Rows per page</span>
-              <select
-                value={rowsPerPage}
-                onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                className="rounded-md border border-gray-700 bg-transparent px-2 py-1 focus:outline-none"
-              >
+            <span className='font-bold'>Rows per page</span>
+            <Select
+              value={String(rowsPerPage)}
+              onValueChange={(value) => {
+                setRowsPerPage(Number(value));
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={rowsPerPage} />
+              </SelectTrigger>
+              <SelectContent side="top">
                 {[5, 10, 20, 50].map((n) => (
-                  <option key={n} value={n} className="bg-gray-900">{n}</option>
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
                 ))}
-              </select>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-2">
               <span className='font-bold'>

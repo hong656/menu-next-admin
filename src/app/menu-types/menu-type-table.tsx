@@ -278,10 +278,10 @@ export default function MenuTypesTable(): React.ReactElement {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter by type name..."
-          className="w-64"
+          className="w-60"
         />
-        <Button onClick={() => setDialogOpen(true)}>
-          <BadgePlus className="mr-2 h-4 w-4" /> New Type
+        <Button className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
+          <BadgePlus/> New
         </Button>
       </div>
 
@@ -293,7 +293,7 @@ export default function MenuTypesTable(): React.ReactElement {
               <TableHead className="w-16">#</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead className='text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
