@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   Trash2,
+  Filter,
 } from 'lucide-react';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
@@ -36,6 +37,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
 
 type SystemUser = {
   id: number;
@@ -146,40 +149,40 @@ export default function SystemUsersTable(): React.ReactElement {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [tempStatus, setTempStatus] = useState(status);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [confirmationState, setConfirmationState] = useState<{
     userId: number;
     action: TableStatusAction;
   } | null>(null);
 
-  //this is call users
   const fetchUsers = useCallback(async () => {
     setState('loading');
     const params = new URLSearchParams();
 
-    params.append('page', (page - 1).toString());
+    params.append('page', (page - 1).toString()); 
     params.append('size', rowsPerPage.toString());
 
     if (debouncedQuery) {
-      params.append('q', debouncedQuery);
+        params.append('search', debouncedQuery);
     }
     if (status !== 'all') {
-      const numericStatus = status === 'active' ? 1 : 2;
-      params.append('status', numericStatus.toString());
+        const numericStatus = status === 'active' ? 1 : 2;
+        params.append('status', numericStatus.toString());
     }
 
     try {
       const { data } = await axios.get(`${BACKEND_URL}/api/users?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
-      // Update state with pagination data from the API response
       setPagedUsers(Array.isArray(data.items) ? data.items : []);
       setTotalPages(data.totalPages);
       setTotalItems(data.totalItems);
       setState('success');
     } catch (err) {
       console.error(err);
-      setPagedUsers([]); // Clear data on error
+      setPagedUsers([]);
       setState('error');
     }
   }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status]);
@@ -352,6 +355,13 @@ export default function SystemUsersTable(): React.ReactElement {
     }
   };
 
+  const handleFilterOpenChange = (open: boolean) => {
+    if (open) {
+      setTempStatus(status);
+    }
+    setFilterOpen(open);
+  };
+
   return (
     <div className="space-y-4">
       <Toaster richColors position="top-right" />
@@ -363,32 +373,66 @@ export default function SystemUsersTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <div className="flex">
+        <div className='flex'>
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter by name or email..."
-            className='mr-3'
+            placeholder="Filter by title..."
+            className="mr-3 w-60"
           />
-          <Select
-            value={status}
-            onValueChange={(value) => {
-              if (value === 'all' || value === 'active' || value === 'inactive') {
-                setStatus(value);
-              }
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter" className="text-sm font-medium">
+                    Status
+                  </Label>
+                  <Select
+                    value={tempStatus}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === 'active' || value === 'inactive') {
+                        setTempStatus(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger 
+                      id="status-filter" 
+                      className="border-gray-300 w-50"
+                    >
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem 
+                          key={opt.value} 
+                          value={opt.value}
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>Cancel</Button>
+                <Button onClick={() => {
+                  setStatus(tempStatus);
+                  setFilterOpen(false);
+                }}
+                className='border cursor-pointer h-8'>Apply</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
           <BadgePlus /> New
@@ -479,15 +523,23 @@ export default function SystemUsersTable(): React.ReactElement {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className='font-bold'>Rows per page</span>
-            <select
-              value={rowsPerPage}
-              onChange={(e) => setRowsPerPage(Number(e.target.value))}
-              className="rounded-md border border-gray-700 bg-transparent px-2 py-1 focus:outline-none"
+            <Select
+              value={String(rowsPerPage)}
+              onValueChange={(value) => {
+                setRowsPerPage(Number(value));
+              }}
             >
-              {[5, 10, 20, 50].map((n) => (
-                <option key={n} value={n} className="bg-gray-900">{n}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={rowsPerPage} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[5, 10, 20, 50].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-2">
             <span className='font-bold'>

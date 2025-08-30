@@ -18,6 +18,7 @@ import {
   XCircle,
   Trash2,
   Pencil,
+  Filter,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,7 +36,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Using Shadcn Select
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
 
 type MenuType = {
   id: number;
@@ -44,6 +47,12 @@ type MenuType = {
   createdAt: string;
   updatedAt: string;
 };
+
+const STATUS_OPTIONS = [
+  { label: 'All', value: 'all' },
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' },
+] as const;
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
 
@@ -112,48 +121,46 @@ export default function MenuTypesTable(): React.ReactElement {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingMenuType, setEditingMenuType] = useState<MenuType | null>(null);
+  const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]['value']>('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [tempStatus, setTempStatus] = useState(status);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [confirmationState, setConfirmationState] = useState<{
     menuTypeId: number;
     action: StatusAction;
   } | null>(null);
 
-  // --- MODIFIED: Fetches menu types from the new API endpoint ---
   const fetchMenuTypes = useCallback(async () => {
     setState('loading');
     const params = new URLSearchParams();
-    params.append('page', (page - 1).toString());
+
+    params.append('page', (page - 1).toString()); 
     params.append('size', rowsPerPage.toString());
+
     if (debouncedQuery) {
-      params.append('q', debouncedQuery); // Assuming backend supports search via 'q'
+        params.append('search', debouncedQuery);
+    }
+    if (status !== 'all') {
+        const numericStatus = status === 'active' ? 1 : 2;
+        params.append('status', numericStatus.toString());
     }
 
     try {
-      const { data } = await axios.get(`${BACKEND_URL}/api/menu-types`, {
+      const { data } = await axios.get(`${BACKEND_URL}/api/menu-types?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
-      // The menu types endpoint might not be paginated. Adjusting logic.
-      if (Array.isArray(data)) {
-        // Handle non-paginated response
-        setPagedMenuTypes(data);
-        setTotalPages(1);
-        setTotalItems(data.length);
-      } else {
-        // Handle paginated response if backend provides it
-        setPagedMenuTypes(Array.isArray(data.items) ? data.items : []);
-        setTotalPages(data.totalPages || 1);
-        setTotalItems(data.totalItems || 0);
-      }
+      setPagedMenuTypes(Array.isArray(data.items) ? data.items : []);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.totalItems);
       setState('success');
     } catch (err) {
       console.error(err);
       setPagedMenuTypes([]);
       setState('error');
     }
-  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery]);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status]);
   
-  // Debounce and Pagination effects (no changes needed)
   useEffect(() => { fetchMenuTypes(); }, [fetchMenuTypes]);
   useEffect(() => {
     const handler = setTimeout(() => { setDebouncedQuery(query); if (page !== 1) setPage(1); }, 500);
@@ -241,7 +248,6 @@ export default function MenuTypesTable(): React.ReactElement {
     }
   };
 
-  // --- MODIFIED: Handler for updating an existing menu type ---
   const handleUpdate = async (values: Record<string, string>) => {
     if (!editingMenuType) return;
     try {
@@ -261,9 +267,15 @@ export default function MenuTypesTable(): React.ReactElement {
     }
   };
 
+  const handleFilterOpenChange = (open: boolean) => {
+    if (open) {
+      setTempStatus(status);
+    }
+    setFilterOpen(open);
+  };
+
   return (
     <div className="space-y-4">
-      <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
           {/* --- MODIFIED: UI Text --- */}
@@ -273,14 +285,68 @@ export default function MenuTypesTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        {/* --- MODIFIED: UI Text --- */}
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Filter by type name..."
-          className="w-60"
-        />
-        <Button className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
+        <div className='flex'>
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter by title..."
+            className="mr-3 w-60"
+          />
+          <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter" className="text-sm font-medium">
+                    Status
+                  </Label>
+                  <Select
+                    value={tempStatus}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === 'active' || value === 'inactive') {
+                        setTempStatus(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger 
+                      id="status-filter" 
+                      className="border-gray-300 w-50"
+                    >
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem 
+                          key={opt.value} 
+                          value={opt.value}
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>Cancel</Button>
+                <Button onClick={() => {
+                  setStatus(tempStatus);
+                  setFilterOpen(false);
+                }}
+                className='border cursor-pointer h-8'>Apply</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
           <BadgePlus/> New
         </Button>
       </div>

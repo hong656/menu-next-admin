@@ -20,6 +20,7 @@ import {
   Trash2,
   Image as ImageIcon,
   Eye,
+  Filter,
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -39,6 +40,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
 
 type MenuItem = {
   id: number;
@@ -134,7 +137,8 @@ export default function MenuItemTable(): React.ReactElement {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]['value']>('all');
-  const [page, setPage] = useState<number>(1); // UI page (1-based index)
+  const [type, setType] = useState('all');
+  const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -145,12 +149,15 @@ export default function MenuItemTable(): React.ReactElement {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const [tempStatus, setTempStatus] = useState(status);
+  const [tempType, setTempType] = useState(type);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const handleClosePreview = useCallback(() => {
     setIsPreviewVisible(false);
     const timer = setTimeout(() => {
       setPreviewImage(null);
-    }, 300); // Corresponds to the transition duration
+    }, 300);
     return () => clearTimeout(timer);
   }, []);
 
@@ -168,37 +175,38 @@ export default function MenuItemTable(): React.ReactElement {
     action: MenuItemStatusAction;
   } | null>(null);
 
-  const fetchMenuItems = useCallback(async () => {
+    const fetchMenuItems = useCallback(async () => {
     setState('loading');
     const params = new URLSearchParams();
 
-    // The API uses a 0-based index for pages
     params.append('page', (page - 1).toString()); 
     params.append('size', rowsPerPage.toString());
 
     if (debouncedQuery) {
-        params.append('q', debouncedQuery);
+        params.append('search', debouncedQuery);
     }
     if (status !== 'all') {
         const numericStatus = status === 'active' ? 1 : 2;
         params.append('status', numericStatus.toString());
     }
+    if (type !== 'all') {
+        params.append('menuTypeId', type);
+    }
 
     try {
-      const { data } = await axios.get(`http://localhost:8080/api/menu-items?${params.toString()}`, {
+      const { data } = await axios.get(`${BACKEND_URL}/api/menu-items?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
-      // Update state with data from the API response
       setPagedMenuItems(Array.isArray(data.items) ? data.items : []);
       setTotalPages(data.totalPages);
       setTotalItems(data.totalItems);
       setState('success');
     } catch (err) {
       console.error(err);
-      setPagedMenuItems([]); // Clear data on error
+      setPagedMenuItems([]);
       setState('error');
     }
-  }, [page, rowsPerPage, debouncedQuery, status]);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status, type]);
 
   useEffect(() => {
     fetchMenuItems();
@@ -217,11 +225,11 @@ export default function MenuItemTable(): React.ReactElement {
 
   useEffect(() => {
     if(page !== 1) setPage(1);
-  }, [status, rowsPerPage]);
+  }, [status, type, rowsPerPage]);
 
   const fetchMenuTypes = async () => {
     try {
-      const { data } = await axios.get(`${BACKEND_URL}/api/menu-types`);
+      const { data } = await axios.get(`${BACKEND_URL}/api/menu-types/get-all`);
       const activeTypes = data.filter((type: { status: number }) => type.status === 1);
       setMenuTypes(activeTypes);
     } catch (error) {
@@ -367,26 +375,34 @@ export default function MenuItemTable(): React.ReactElement {
   };
 
   const handleUpdate = async (formData: FormData) => {
-  if (!editingItem) return;
-  try {
-    await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/menu-items/${editingItem.id}`, formData);
-    
-    await fetchMenuItems();
-    setEditDialogOpen(false);
-    toast.success("Menu Item Updated", {
-      description: "has been successfully updated.",
-    });
-    setEditingItem(null);
-  } catch (error) {
-    console.error('Error updating menu item:', error);
-    toast.error("Update Failed", {
-      description: "The menu item could not be updated. Please try again.",
-    });
-  }
-};
+    if (!editingItem) return;
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/menu-items/${editingItem.id}`, formData);
+      
+      await fetchMenuItems();
+      setEditDialogOpen(false);
+      toast.success("Menu Item Updated", {
+        description: "has been successfully updated.",
+      });
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Error updating menu item:', error);
+      toast.error("Update Failed", {
+        description: "The menu item could not be updated. Please try again.",
+      });
+    }
+  };
+
+  const handleFilterOpenChange = (open: boolean) => {
+    if (open) {
+      setTempStatus(status);
+      setTempType(type);
+    }
+    setFilterOpen(open);
+  };
 
   const formatPrice = (priceCents: number) => {
-    return `$${(priceCents / 100).toFixed(2)}`;
+    return `${(priceCents / 100).toFixed(2)}`;
   };
 
   return (
@@ -404,28 +420,84 @@ export default function MenuItemTable(): React.ReactElement {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter by name or description..."
-            className='mr-3 w-60'
+            placeholder="Filter by title..."
+            className="mr-3 w-60"
           />
-          <Select
-            value={status}
-            onValueChange={(value) => {
-              if (value === 'all' || value === 'active' || value === 'inactive') {
-                setStatus(value);
-              }
-            }}
-          >
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter" className="text-sm font-medium">
+                    Status
+                  </Label>
+                  <Select
+                    value={tempStatus}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === 'active' || value === 'inactive') {
+                        setTempStatus(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger 
+                      id="status-filter" 
+                      className="border-gray-300 w-50"
+                    >
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem 
+                          key={opt.value} 
+                          value={opt.value}
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type-filter" className="text-sm font-medium">
+                    Type
+                  </Label>
+                  <Select
+                    value={tempType}
+                    onValueChange={(value) => setTempType(value)}
+                  >
+                    <SelectTrigger id="type-filter" className="border-gray-300 w-50">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {menuTypes.map((opt) => (
+                        <SelectItem key={opt.id} value={String(opt.id)}>
+                          {opt.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>Cancel</Button>
+                <Button onClick={() => {
+                  setStatus(tempStatus);
+                  setType(tempType);
+                  setFilterOpen(false);
+                }}
+                className='border cursor-pointer h-8'>Apply</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
           <BadgePlus /> New

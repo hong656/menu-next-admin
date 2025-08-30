@@ -16,6 +16,7 @@ import {
   XCircle,
   Clock9,
   Trash2,
+  Filter,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -27,7 +28,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
 
 type OrderItem = {
     id: number;
@@ -60,6 +70,14 @@ type OrderEntry = {
   updatedAt: string;
   orderItems: OrderItem[];
 };
+
+const STATUS_OPTIONS = [
+  { label: 'All', value: 'all' },
+  { label: 'Received', value: 'received' },
+  { label: 'Preparing', value: 'preparing' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Canceled', value: 'canceled' },
+] as const;
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
 
@@ -150,6 +168,9 @@ export default function OrderTable(): React.ReactElement {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]['value']>('all');
+  const [tempStatus, setTempStatus] = useState(status);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [confirmationState, setConfirmationState] = useState<{
     orderId: number;
@@ -160,32 +181,31 @@ export default function OrderTable(): React.ReactElement {
     setState('loading');
     const params = new URLSearchParams();
 
-    // API uses 0-based page index, UI uses 1-based
-    params.append('page', (page - 1).toString());
+    params.append('page', (page - 1).toString()); 
     params.append('size', rowsPerPage.toString());
 
     if (debouncedQuery) {
-        // Assuming the API uses 'q' for table number search
-        params.append('q', debouncedQuery);
+        params.append('search', debouncedQuery);
+    }
+    if (status !== 'all') {
+        const numericStatus = status === 'received' ? 1 : 2;
+        params.append('status', numericStatus.toString());
     }
 
     try {
       const { data } = await axios.get(`${BACKEND_URL}/api/orders?${params.toString()}`, {
         headers: { Accept: 'application/json' },
       });
-      
-      // Update state with pagination data from the API response
       setPagedOrders(Array.isArray(data.items) ? data.items : []);
       setTotalPages(data.totalPages);
       setTotalItems(data.totalItems);
-      
       setState('success');
     } catch (err) {
-      console.error('Failed to fetch orders:', err);
-      setPagedOrders([]); // Clear data on error
+      console.error(err);
+      setPagedOrders([]);
       setState('error');
     }
-  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery]);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status]);
 
   useEffect(() => {
     fetchOrders();
@@ -255,6 +275,13 @@ export default function OrderTable(): React.ReactElement {
     }
   };
 
+  const handleFilterOpenChange = (open: boolean) => {
+    if (open) {
+      setTempStatus(status);
+    }
+    setFilterOpen(open);
+  };
+
   return (
     <div className="space-y-4">
       <Toaster richColors position="top-right" />
@@ -266,12 +293,67 @@ export default function OrderTable(): React.ReactElement {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Filter by table number..."
-          className="w-64"
-        />
+        <div className='flex'>
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter by table number..."
+            className="mr-3 w-60"
+          />
+          <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter" className="text-sm font-medium">
+                    Status
+                  </Label>
+                  <Select
+                    value={tempStatus}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === 'received' || value === 'preparing' || value === 'completed' || value === 'canceled') {
+                        setTempStatus(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger 
+                      id="status-filter" 
+                      className="border-gray-300 w-50"
+                    >
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem 
+                          key={opt.value} 
+                          value={opt.value}
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>Cancel</Button>
+                <Button onClick={() => {
+                  setStatus(tempStatus);
+                  setFilterOpen(false);
+                }}
+                className='border cursor-pointer h-8'>Apply</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -376,15 +458,23 @@ export default function OrderTable(): React.ReactElement {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className='font-bold'>Rows per page</span>
-            <select
-              value={rowsPerPage}
-              onChange={(e) => setRowsPerPage(Number(e.target.value))}
-              className="rounded-md border border-gray-700 bg-transparent px-2 py-1 focus:outline-none"
+            <Select
+              value={String(rowsPerPage)}
+              onValueChange={(value) => {
+                setRowsPerPage(Number(value));
+              }}
             >
-              {[5, 10, 20, 50].map((n) => (
-                <option key={n} value={n} className="bg-gray-900">{n}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={rowsPerPage} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[5, 10, 20, 50].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-2">
             <span className='font-bold'>
