@@ -377,7 +377,7 @@ export default function SystemUsersTable(): React.ReactElement {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter by title..."
+            placeholder="Filter by name or email..."
             className="mr-3 w-60"
           />
           <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
