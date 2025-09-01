@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
+import {useTranslations} from 'next-intl';
 
 type SystemUser = {
   id: number;
@@ -133,8 +134,9 @@ const UserStatusBadge = ({ status }: UserStatusBadgeProps) => {
 };
 
 export default function SystemUsersTable(): React.ReactElement {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
+  const t = useTranslations('Button');
   const [pagedUsers, setPagedUsers] = useState<SystemUser[]>([]);
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [state, setState] = useState<FetchState>('idle');
@@ -270,7 +272,7 @@ export default function SystemUsersTable(): React.ReactElement {
     };
 
     try {
-      await axios.post('http://localhost:8080/api/auth/signup', createData, {
+      await axios.post(`${BACKEND_URL}/api/auth/signup`, createData, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -303,7 +305,7 @@ export default function SystemUsersTable(): React.ReactElement {
   const updateTableStatus = async (userId: number, action: TableStatusAction) => {
     setIsLoading(true);
     try {
-      await axios.patch(`http://localhost:8080/api/users/delete/${userId}`, {
+      await axios.patch(`${BACKEND_URL}/api/users/delete/${userId}`, {
         status: action.status,
       });
       await fetchUsers();
@@ -387,7 +389,7 @@ export default function SystemUsersTable(): React.ReactElement {
                 className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
               >
                 <Filter className="h-4 w-4" />
-                Filter
+                {t('filter')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
@@ -435,7 +437,7 @@ export default function SystemUsersTable(): React.ReactElement {
           </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> New
+          <BadgePlus /> {t('new')}
         </Button>
       </div>
 

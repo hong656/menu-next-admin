@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
+import {useTranslations} from 'next-intl';
 
 // --- NEW BANNER TYPE ---
 type Banner = {
@@ -120,7 +121,7 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
 export default function BannerTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-  // --- STATE UPDATED FOR BANNERS ---
+  const t = useTranslations('Button');
   const [pagedBanners, setPagedBanners] = useState<Banner[]>([]);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(query);
@@ -326,7 +327,7 @@ export default function BannerTable(): React.ReactElement {
                 className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
               >
                 <Filter className="h-4 w-4" />
-                Filter
+                ${t('filter')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
@@ -372,7 +373,7 @@ export default function BannerTable(): React.ReactElement {
           </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> New
+          <BadgePlus /> {t('new')}
         </Button>
       </div>
 

@@ -42,18 +42,25 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
+import { MenuItemDialog } from '@/components/ui/menu-item-dialog';
+import {useTranslations} from 'next-intl';
 
-type MenuItem = {
-  id: number;
+type MenuItemTranslation = {
+  languageCode: string;
   name: string;
-  menuType: MenuType;
   description: string;
+};
+
+export type MenuItem = {
+  id: number;
+  menuType: MenuType;
   priceCents: number;
   imageUrl?: string | null;
   status: number;
+  translations: MenuItemTranslation[];
 };
 
-type MenuType = {
+export type MenuType = {
   id: number;
   name: string;
 };
@@ -128,8 +135,9 @@ const MenuItemStatusBadge = ({ status }: MenuItemStatusBadgeProps) => {
 
 
 export default function MenuItemTable(): React.ReactElement {
-  const BACKEND_URL = 'http://localhost:8080';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
+  const t = useTranslations('Button');
   const [pagedMenuItems, setPagedMenuItems] = useState<MenuItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [menuTypes, setMenuTypes] = useState<MenuType[]>([]);
@@ -254,14 +262,6 @@ export default function MenuItemTable(): React.ReactElement {
     const q = query.trim().toLowerCase();
     let list = menuItems;
 
-    if (q) {
-      list = list.filter((item) => {
-        const name = item.name.toLowerCase();
-        const description = item.description.toLowerCase();
-        return name.includes(q) || description.includes(q);
-      });
-    }
-
     if (status !== 'all') {
       const numericStatus = status === 'inactive' ? 1 : 2;
       list = list.filter((item) => item.status === numericStatus);
@@ -325,20 +325,20 @@ export default function MenuItemTable(): React.ReactElement {
   ];
 
   const handleCreate = async (formData: FormData) => {
-  try {
-    await axios.post(`http://localhost:8080/api/menu-items`, formData);
-    await fetchMenuItems();
-    setDialogOpen(false);
-    toast.success("Menu Item Created", {
-      description: "The new item has been successfully added.",
-    });
-  } catch (error) {
-    console.error('Error creating menu item:', error);
-    toast.error("Creation Failed", {
-      description: "Could not create the menu item. Please try again.",
-    });
-  }
-};
+    try {
+      await axios.post(`${BACKEND_URL}/api/menu-items`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+      });
+      await fetchMenuItems();
+      setDialogOpen(false);
+      toast.success("Menu Item Created");
+    } catch (error) {
+      console.error('Error creating menu item:', error);
+      toast.error("Creation Failed");
+    }
+  };
 
   const handleEdit = (item: MenuItem) => {
     setEditingItem(item);
@@ -355,7 +355,7 @@ export default function MenuItemTable(): React.ReactElement {
   const updateMenuItemStatus = async (itemId: number, action: MenuItemStatusAction) => {
     setIsLoading(true);
     try {
-      await axios.patch(`http://localhost:8080/api/menu-items/${itemId}`, {
+      await axios.patch(`${BACKEND_URL}/api/menu-items/${itemId}`, {
         status: action.status,
       });
       await fetchMenuItems();
@@ -377,19 +377,20 @@ export default function MenuItemTable(): React.ReactElement {
   const handleUpdate = async (formData: FormData) => {
     if (!editingItem) return;
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/menu-items/${editingItem.id}`, formData);
+      
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/menu-items/${editingItem.id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+      });
       
       await fetchMenuItems();
       setEditDialogOpen(false);
-      toast.success("Menu Item Updated", {
-        description: "has been successfully updated.",
-      });
+      toast.success("Menu Item Updated");
       setEditingItem(null);
     } catch (error) {
       console.error('Error updating menu item:', error);
-      toast.error("Update Failed", {
-        description: "The menu item could not be updated. Please try again.",
-      });
+      toast.error("Update Failed");
     }
   };
 
@@ -430,7 +431,7 @@ export default function MenuItemTable(): React.ReactElement {
                 className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
               >
                 <Filter className="h-4 w-4" />
-                Filter
+                {t('filter')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
@@ -500,7 +501,7 @@ export default function MenuItemTable(): React.ReactElement {
           </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> New
+          <BadgePlus /> {t('new')}
         </Button>
       </div>
 
@@ -510,10 +511,9 @@ export default function MenuItemTable(): React.ReactElement {
             <TableRow>
               <TableHead className="w-16">#</TableHead>
               <TableHead className="text-base w-[150px]">Image</TableHead>
-              <TableHead className="text-base">Name</TableHead>
-              <TableHead className="text-base">Type</TableHead>
-              <TableHead className="text-base">Description</TableHead>
+              <TableHead className="text-base">Name & Description</TableHead>
               <TableHead className="text-base">Price</TableHead>
+              <TableHead className="text-base">Type</TableHead>
               <TableHead className="text-base">Status</TableHead>
               <TableHead className="text-base">Actions</TableHead>
             </TableRow>
@@ -544,6 +544,7 @@ export default function MenuItemTable(): React.ReactElement {
               const absoluteImageUrl = item.imageUrl && item.imageUrl.startsWith('/')
                 ? `${BACKEND_URL}${item.imageUrl}`
                 : item.imageUrl;
+                const englishTranslation = item.translations.find(t => t.languageCode === 'en') || { name: 'N/A', description: '' };
               return (
                 <TableRow key={item.id}>
                   <TableCell className='font-bold text-md'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
@@ -553,7 +554,7 @@ export default function MenuItemTable(): React.ReactElement {
                         <>
                           <NextImage
                             src={absoluteImageUrl}
-                            alt={item.name}
+                            alt="image"
                             fill
                             className="rounded-md object-cover z-10" // <-- ADD z-10 HERE
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -574,13 +575,33 @@ export default function MenuItemTable(): React.ReactElement {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-md font-medium">{item.name}</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className='cursor-pointer'>Name & Description</Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-80">
+                        <div className="grid gap-4 p-4">
+                          {item.translations.map((translation) => (
+                            <div key={translation.languageCode} className="space-y-2">
+                              <h4 className="font-medium leading-none">
+                                {translation.languageCode.toUpperCase()}
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                <strong>Name:</strong> {translation.name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                <strong>Description:</strong> {translation.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </TableCell>
+                  <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
                   <TableCell>
                     <Badge>{item.menuType?.name || 'N/A'}</Badge>
                   </TableCell>
-                  <TableCell className="max-w-xs truncate">{item.description}</TableCell>
-                  <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
                   <TableCell>
                     <MenuItemStatusBadge status={item.status} />
                   </TableCell>
@@ -656,44 +677,19 @@ export default function MenuItemTable(): React.ReactElement {
         </div>
       </div>
 
-      <FileFormDialog
+      <MenuItemDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title="Create Menu Item"
-        description="Create a new menu item"
-        fields={fields}
-        layout={{
-          fileFields: ['image'],
-          dataFields: ['name', 'menuTypeId', 'description', 'priceCents', 'status']
-        }}
-        submitLabel="Create"
-        cancelLabel="Cancel"
         onSubmit={handleCreate}
+        menuTypes={menuTypes}
       />
 
-      <FileFormDialog
+      <MenuItemDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        title="Edit Menu Item"
-        description="Update menu item information"
-        fields={editFields}
-        layout={{
-          fileFields: ['image'],
-          dataFields: ['name', 'menuTypeId', 'description', 'priceCents', 'status']
-        }}
-        submitLabel="Update"
-        cancelLabel="Cancel"
-        initialValues={editingItem ? {
-          name: editingItem.name,
-          description: editingItem.description,
-          priceCents: String(editingItem.priceCents),
-          status: String(editingItem.status),
-          menuTypeId: String(editingItem.menuType?.id),
-          image: editingItem.imageUrl && editingItem.imageUrl.startsWith('/')
-              ? `${BACKEND_URL}${editingItem.imageUrl}`
-              : editingItem.imageUrl ?? '',
-        } : undefined}
         onSubmit={handleUpdate}
+        menuTypes={menuTypes}
+        initialData={editingItem}
       />
 
       <ConfirmationDialog
@@ -770,3 +766,4 @@ export default function MenuItemTable(): React.ReactElement {
     </div>
   );
 }
+

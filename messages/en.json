@@ -18,6 +18,9 @@
         "Interface Settings": "Interface Settings",
         "banner": "Banners",
         "setting": "General Settings"
+    },
+    "Button": {
+        "new": "New",
+        "filter": "Filter"
     }
-    
 }

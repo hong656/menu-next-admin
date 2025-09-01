@@ -350,7 +350,7 @@ export default function RestaurantDashboard() {
         }
 
         try {
-            const { data } = await axios.get<ApiListResponse>('http://localhost:8080/api/orders/all', {
+            const { data } = await axios.get<ApiListResponse>(`${BACKEND_URL}/api/orders/all`, {
                 headers: { Accept: 'application/json' },
             });
             const { orders: transformedOrders, stats: transformedStats } = transformApiListData(data);

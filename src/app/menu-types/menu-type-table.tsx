@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
+import {useTranslations} from 'next-intl';
 
 type MenuType = {
   id: number;
@@ -108,8 +109,9 @@ const TableStatusBadge = ({ status }: TableStatusBadgeProps) => {
 };
 
 export default function MenuTypesTable(): React.ReactElement {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
+  const t = useTranslations('Button');
   const [pagedMenuTypes, setPagedMenuTypes] = useState<MenuType[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
@@ -299,7 +301,7 @@ export default function MenuTypesTable(): React.ReactElement {
                 className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
               >
                 <Filter className="h-4 w-4" />
-                Filter
+                ${t('filter')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
@@ -347,7 +349,7 @@ export default function MenuTypesTable(): React.ReactElement {
           </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus/> New
+          <BadgePlus/> ${t('new')}
         </Button>
       </div>
 
@@ -355,7 +357,6 @@ export default function MenuTypesTable(): React.ReactElement {
         <Table>
           <TableHeader>
             <TableRow>
-              {/* --- MODIFIED: Table Headers --- */}
               <TableHead className="w-16">#</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
@@ -369,7 +370,6 @@ export default function MenuTypesTable(): React.ReactElement {
             {state === 'success' && pagedMenuTypes.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center">No results found.</TableCell></TableRow>}
             {state === 'success' && pagedMenuTypes.map((menuType, idx) => (
               <TableRow key={menuType.id}>
-                {/* --- MODIFIED: Data Rendering --- */}
                 <TableCell className='font-bold'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
                 <TableCell>
                   <span className="font-medium">{menuType.name}</span>

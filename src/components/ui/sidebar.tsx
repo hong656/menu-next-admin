@@ -27,7 +27,7 @@ type NavItem = {
   icon: LucideIcon;
   href?: string;
   subItems?: SubNavItem[];
-  group?: string; // Optional small header shown above contiguous items in the same group
+  group?: string;
 };
 
 type SidebarProps = {
@@ -96,9 +96,6 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
-      {/* <div className="flex items-center justify-center h-16 border-b border-sidebar-border">
-        <h1 className="text-lg font-bold">Admin Menu</h1>
-      </div> */}
       <nav className="flex-1 space-y-2 p-4 text-sm font-medium">
         <ul>
           {sidebarNavItems.map((item, index) => {

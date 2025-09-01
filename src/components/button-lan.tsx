@@ -17,11 +17,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {Languages, Check, Loader2} from 'lucide-react';
 
-type Locale = 'en' | 'km';
+type Locale = 'en' | 'kh';
 
 const LOCALES: {value: Locale; label: string;}[] = [
   {value: 'en', label: 'English'},
-  {value: 'km', label: 'ភាសាខ្មែរ'}
+  {value: 'kh', label: 'ភាសាខ្មែរ'}
 ];
 
 export default function LocaleSwitcher() {

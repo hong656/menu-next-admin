@@ -18,5 +18,9 @@
         "Interface Settings": "ការកំណត់អន្តរកម្ម",
         "banner": "ផ្ទាំង",
         "setting": "ការកំណត់ទូទៅ"
+    },
+    "Button": {
+        "new": "ថ្មី",
+        "filter": "ច្រោះ"
     }
 }
