@@ -12,7 +12,6 @@ import LocaleSwitcher from '../button-lan';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
-  // Using a simpler function type for the setter
   setIsSidebarOpen: (open: boolean) => void;
 }
 

@@ -21,6 +21,7 @@ type Translation = {
 const languageNameMap: Record<LanguageCode, string> = {
   kh: "Khmer",
   en: "English",
+
 };
 
 // --- Component Props ---
@@ -48,6 +49,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
   const [translations, setTranslations] = useState<Record<LanguageCode, Translation>>({
     kh: { name: "", description: "" },
     en: { name: "", description: "" },
+
   });
   
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +66,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
       const newTranslations: Record<LanguageCode, Translation> = {
         kh: { name: "", description: "" },
         en: { name: "", description: "" },
+
       };
       initialData.translations.forEach(t => {
         if (t.languageCode in newTranslations) {
@@ -88,6 +91,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
       setTranslations({
         kh: { name: "", description: "" },
         en: { name: "", description: "" },
+
       });
       setCurrentLang("kh");
     }
@@ -172,7 +176,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
         <DialogHeader>
           <DialogTitle className="text-2xl">{dialogTitle}</DialogTitle>
           <div className="flex items-center space-x-2 pt-2">
-            {(["kh", "en"] as LanguageCode[]).map((lang) => (
+            {(["kh", "en", "ch"] as LanguageCode[]).map((lang) => (
               <Button key={lang} type="button" variant={currentLang === lang ? "default" : "outline"} onClick={() => setCurrentLang(lang)}>
                 {languageNameMap[lang]}
               </Button>
