@@ -44,6 +44,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import { MenuItemDialog } from '@/components/ui/menu-item-dialog';
 import {useTranslations} from 'next-intl';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
 type MenuItemTranslation = {
   languageCode: string;
@@ -138,6 +139,7 @@ export default function MenuItemTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const t = useTranslations('Button');
+  const thead = useTranslations('Sidebar');
   const [pagedMenuItems, setPagedMenuItems] = useState<MenuItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [menuTypes, setMenuTypes] = useState<MenuType[]>([]);
@@ -160,6 +162,8 @@ export default function MenuItemTable(): React.ReactElement {
   const [tempStatus, setTempStatus] = useState(status);
   const [tempType, setTempType] = useState(type);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [itemForDetail, setItemForDetail] = useState<MenuItem | null>(null);
 
   const handleClosePreview = useCallback(() => {
     setIsPreviewVisible(false);
@@ -411,8 +415,7 @@ export default function MenuItemTable(): React.ReactElement {
       <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Menu Items</h1>
-          <p className="mt-1 text-sm">Here a list of Menu Items!</p>
+          <h1 className="text-2xl font-bold">{thead('menu_items')}</h1>
         </div>
       </div>
 
@@ -511,7 +514,8 @@ export default function MenuItemTable(): React.ReactElement {
             <TableRow>
               <TableHead className="w-16">#</TableHead>
               <TableHead className="text-base w-[150px]">Image</TableHead>
-              <TableHead className="text-base">Name & Description</TableHead>
+              <TableHead className="text-base">Name</TableHead>
+              <TableHead className="text-base">Description</TableHead>
               <TableHead className="text-base">Price</TableHead>
               <TableHead className="text-base">Type</TableHead>
               <TableHead className="text-base">Status</TableHead>
@@ -521,14 +525,14 @@ export default function MenuItemTable(): React.ReactElement {
           <TableBody>
             {state === 'loading' && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center">
+                <TableCell colSpan={8} className="py-10 text-center">
                   Loading menu items...
                 </TableCell>
               </TableRow>
             )}
             {state === 'error' && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center">
+                <TableCell colSpan={8} className="py-10 text-center">
                   Failed to load menu items.
                 </TableCell>
               </TableRow>
@@ -556,12 +560,12 @@ export default function MenuItemTable(): React.ReactElement {
                             src={absoluteImageUrl}
                             alt="image"
                             fill
-                            className="rounded-md object-cover z-10" // <-- ADD z-10 HERE
+                            className="rounded-md object-cover z-10"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             priority={currentPage === 1 && idx === 0}
                           />
                           <div
-                            className="absolute inset-0 hover:bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md z-20" // <-- ADD z-20 HERE
+                            className="absolute inset-0 hover:bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md z-20"
                             onClick={() => setPreviewImage(absoluteImageUrl)}
                           >
                             <Eye className="text-white h-6 w-6" />
@@ -575,28 +579,12 @@ export default function MenuItemTable(): React.ReactElement {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className='cursor-pointer'>Name & Description</Button>
-                      </PopoverTrigger>
-                      <PopoverContent align="start" className="w-80">
-                        <div className="grid gap-4 p-4">
-                          {item.translations.map((translation) => (
-                            <div key={translation.languageCode} className="space-y-2">
-                              <h4 className="font-medium leading-none">
-                                {translation.languageCode.toUpperCase()}
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                <strong>Name:</strong> {translation.name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                <strong>Description:</strong> {translation.description}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <span className="text-md font-medium">{englishTranslation.name}</span>
+                  </TableCell>
+                  <TableCell className="w-80 truncate">
+                    {englishTranslation.description.length > 40
+                      ? englishTranslation.description.slice(0, 40) + '...'
+                      : englishTranslation.description}
                   </TableCell>
                   <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
                   <TableCell>
@@ -613,6 +601,9 @@ export default function MenuItemTable(): React.ReactElement {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => { setItemForDetail(item); setDetailDialogOpen(true); }}>
+                          View Detail
+                        </DropdownMenuItem>
                         <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(item)}>
                           Edit
                         </DropdownMenuItem>
@@ -700,6 +691,32 @@ export default function MenuItemTable(): React.ReactElement {
           description={confirmationState?.action.confirmMessage || ''}
         />
 
+      <AlertDialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Item Details</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="grid gap-4 py-4">
+            {itemForDetail?.translations.map((translation) => (
+              <div key={translation.languageCode} className="space-y-2">
+                <h4 className="font-medium leading-none">
+                  {translation.languageCode.toUpperCase()}
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Name:</strong> {translation.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Description:</strong> {translation.description}
+                </p>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {previewImage && (
         <div
           className={cn(
@@ -766,4 +783,3 @@ export default function MenuItemTable(): React.ReactElement {
     </div>
   );
 }
-

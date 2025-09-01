@@ -137,6 +137,7 @@ export default function SystemUsersTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const t = useTranslations('Button');
+  const thead = useTranslations('Sidebar');
   const [pagedUsers, setPagedUsers] = useState<SystemUser[]>([]);
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [state, setState] = useState<FetchState>('idle');
@@ -369,8 +370,7 @@ export default function SystemUsersTable(): React.ReactElement {
       <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Users</h1>
-          <p className="mt-1 text-sm">Here a list of users!</p>
+          <h1 className="text-2xl font-bold">{thead('system_users')}</h1>
         </div>
       </div>
 

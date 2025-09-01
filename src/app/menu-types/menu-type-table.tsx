@@ -112,6 +112,7 @@ export default function MenuTypesTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const t = useTranslations('Button');
+  const thead = useTranslations('Sidebar');
   const [pagedMenuTypes, setPagedMenuTypes] = useState<MenuType[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
@@ -280,9 +281,7 @@ export default function MenuTypesTable(): React.ReactElement {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          {/* --- MODIFIED: UI Text --- */}
-          <h1 className="text-2xl font-bold">Menu Types</h1>
-          <p className="mt-1 text-sm text-gray-400">Manage categories for your menu items.</p>
+          <h1 className="text-2xl font-bold">{thead('menu_types')}</h1>
         </div>
       </div>
 
@@ -301,7 +300,7 @@ export default function MenuTypesTable(): React.ReactElement {
                 className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
               >
                 <Filter className="h-4 w-4" />
-                ${t('filter')}
+                {t('filter')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
@@ -349,7 +348,7 @@ export default function MenuTypesTable(): React.ReactElement {
           </Popover>
         </div>
         <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus/> ${t('new')}
+          <BadgePlus/> {t('new')}
         </Button>
       </div>
 

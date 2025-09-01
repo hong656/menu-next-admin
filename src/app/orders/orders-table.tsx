@@ -160,6 +160,7 @@ export default function OrderTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const t = useTranslations('Button');
+  const thead = useTranslations('Sidebar');
   const [orders, setOrders] = useState<OrderEntry[]>([]);
   const [pagedOrders, setPagedOrders] = useState<OrderEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
@@ -289,8 +290,7 @@ export default function OrderTable(): React.ReactElement {
       <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Orders</h1>
-          <p className="mt-1 text-sm">A list of all the orders in the system.</p>
+          <h1 className="text-2xl font-bold">{thead('orders')}</h1>
         </div>
       </div>
 

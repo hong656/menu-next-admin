@@ -120,12 +120,13 @@ export default function TablesTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const t = useTranslations('Button');
+  const thead = useTranslations('Sidebar');
   const [pagedTables, setPagedTables] = useState<TableEntry[]>([]);
   const [tables, setTables] = useState<TableEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(query);
-  const [page, setPage] = useState<number>(1); // UI is 1-based index
+  const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -331,8 +332,7 @@ export default function TablesTable(): React.ReactElement {
       <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Tables</h1>
-          <p className="mt-1 text-sm">A list of all the tables in the system.</p>
+          <h1 className="text-2xl font-bold">{thead('tables')}</h1>
         </div>
       </div>
 

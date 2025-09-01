@@ -122,6 +122,7 @@ export default function BannerTable(): React.ReactElement {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   const t = useTranslations('Button');
+  const thead = useTranslations('Sidebar');
   const [pagedBanners, setPagedBanners] = useState<Banner[]>([]);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(query);
@@ -307,8 +308,7 @@ export default function BannerTable(): React.ReactElement {
       <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Banners</h1>
-          <p className="mt-1 text-sm">Here is a list of your Banners!</p>
+          <h1 className="text-2xl font-bold">{thead('banner')}</h1>
         </div>
       </div>
 
