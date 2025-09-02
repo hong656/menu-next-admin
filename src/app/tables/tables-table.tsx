@@ -121,6 +121,7 @@ export default function TablesTable(): React.ReactElement {
 
   const t = useTranslations('Button');
   const thead = useTranslations('Sidebar');
+  const tdialog = useTranslations('DialogHeader');
   const [pagedTables, setPagedTables] = useState<TableEntry[]>([]);
   const [tables, setTables] = useState<TableEntry[]>([]);
   const [state, setState] = useState<FetchState>('idle');
@@ -211,7 +212,6 @@ export default function TablesTable(): React.ReactElement {
     setPage(1);
   }, [query, rowsPerPage]);
 
-  // Form configuration for creating a new table
   const createFields: FieldConfig[] = [
     { name: 'number', label: 'Table Number', required: true, placeholder: 'e.g., 15'},
     {
@@ -226,7 +226,6 @@ export default function TablesTable(): React.ReactElement {
     },
   ];
 
-  // Form configuration for editing an existing table
   const editFields: FieldConfig[] = [
     { name: 'number', label: 'Table Number', required: true, placeholder: 'e.g., 15'},
     {
@@ -241,7 +240,6 @@ export default function TablesTable(): React.ReactElement {
     },
   ];
 
-  // Handler for creating a new table entry
   const handleCreate = async (values: Record<string, string>) => {
     try {
       const createData = {
@@ -329,7 +327,6 @@ export default function TablesTable(): React.ReactElement {
 
   return (
     <div className="space-y-4">
-      <Toaster richColors position="top-right" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{thead('tables')}</h1>
@@ -388,12 +385,12 @@ export default function TablesTable(): React.ReactElement {
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>Cancel</Button>
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>{t('cancel')}</Button>
                 <Button onClick={() => {
                   setStatus(tempStatus);
                   setFilterOpen(false);
                 }}
-                className='border cursor-pointer h-8'>Apply</Button>
+                className='border cursor-pointer h-8'>{t('apply')}</Button>
               </div>
             </PopoverContent>
           </Popover>
@@ -493,7 +490,7 @@ export default function TablesTable(): React.ReactElement {
                 setRowsPerPage(Number(value));
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="!h-7 w-[70px]">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent side="top">
@@ -510,32 +507,28 @@ export default function TablesTable(): React.ReactElement {
               Page {page} of {totalPages}
             </span>
             <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
-                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Dialog for Creating a New Table */}
       <FormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title="Create New Table"
-        description="Add a new table to the system. Only the table number is required."
+        title={tdialog('create_table')}
         fields={createFields}
         submitLabel="Create"
         onSubmit={handleCreate}
       />
 
-      {/* Dialog for Editing an Existing Table */}
       <FormDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        title="Edit Menu Item"
-        description="Update menu item information"
+        title={tdialog('update_table')}
         fields={editFields}
         submitLabel="Update"
         cancelLabel="Cancel"

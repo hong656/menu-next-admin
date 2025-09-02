@@ -21,6 +21,26 @@
     },
     "Button": {
         "new": "New",
-        "filter": "Filter"
+        "filter": "Filter",
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "create": "Create",
+        "update": "Update"
+    },
+    "DialogHeader": {
+        "create_items": "Create Menu Item",
+        "update_items": "Update Menu Item",
+
+        "create_type": "Create Menu Type",
+        "update_type": "Update Menu Type",
+
+        "create_table": "Create Table",
+        "update_table": "Update Table",
+
+        "create_user": "Create User",
+        "update_user": "Update User",
+
+        "create_banner": "Create Banner",
+        "update_banner": "Update Banner"
     }
 }

@@ -21,6 +21,26 @@
     },
     "Button": {
         "new": "ថ្មី",
-        "filter": "ច្រោះ"
+        "filter": "ច្រោះ",
+        "cancel": "បោះបង់",
+        "apply": "អនុវត្ត",
+        "create": "បង្កើត",
+        "update": "កែប្រែ"
+    },
+    "DialogHeader": {
+        "create_items": "បង្កើតមុខម្ហូប",
+        "update_items": "អាប់ដេតមុខម្ហូប",
+
+        "create_type": "បង្កើតប្រភេទមុខម្ហូប",
+        "update_type": "អាប់ដេតប្រភេទមុខម្ហូប",
+
+        "create_table": "បង្កើតតុ",
+        "update_table": "អាប់ដេតតុ",
+
+        "create_user": "បង្កើតអ្នកប្រើប្រាស់",
+        "update_user": "អាប់ដេតអ្នកប្រើប្រាស់",
+
+        "create_banner": "បង្កើតផ្ទាំង",
+        "update_banner": "អាប់ដេតផ្ទាំង"
     }
 }

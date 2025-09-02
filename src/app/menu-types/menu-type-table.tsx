@@ -113,6 +113,7 @@ export default function MenuTypesTable(): React.ReactElement {
 
   const t = useTranslations('Button');
   const thead = useTranslations('Sidebar');
+  const tdialog = useTranslations('DialogHeader');
   const [pagedMenuTypes, setPagedMenuTypes] = useState<MenuType[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
@@ -337,12 +338,12 @@ export default function MenuTypesTable(): React.ReactElement {
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>Cancel</Button>
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>{t('cancel')}</Button>
                 <Button onClick={() => {
                   setStatus(tempStatus);
                   setFilterOpen(false);
                 }}
-                className='border cursor-pointer h-8'>Apply</Button>
+                className='border cursor-pointer h-8'>{t('apply')}</Button>
               </div>
             </PopoverContent>
           </Popover>
@@ -427,7 +428,7 @@ export default function MenuTypesTable(): React.ReactElement {
           <div className="flex items-center gap-2">
             <span className='font-bold'>Rows per page</span>
             <Select value={String(rowsPerPage)} onValueChange={(val) => setRowsPerPage(Number(val))}>
-              <SelectTrigger className="w-[70px] h-8">
+              <SelectTrigger className="w-[70px] !h-7">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
               <SelectContent>
@@ -440,10 +441,10 @@ export default function MenuTypesTable(): React.ReactElement {
           <div className="flex items-center gap-2">
             <span className='font-bold'>Page {page} of {totalPages}</span>
             <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
-                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
+                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
             </div>
           </div>
         </div>
@@ -452,8 +453,7 @@ export default function MenuTypesTable(): React.ReactElement {
       <FormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title="Create New Menu Type"
-        description="Add a new category for menu items."
+        title={tdialog('create_type')}
         fields={createFields}
         submitLabel="Create"
         onSubmit={handleCreate}
@@ -462,8 +462,7 @@ export default function MenuTypesTable(): React.ReactElement {
       <FormDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        title="Edit Menu Type"
-        description="Update the name or status of this menu type."
+        title={tdialog('update_type')}
         fields={editFields}
         submitLabel="Update"
         initialValues={editingMenuType ? {

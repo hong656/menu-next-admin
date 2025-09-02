@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from 'next-intl';
 
 export type FieldConfig = {
   name: string;
@@ -62,10 +63,11 @@ export function FileFormDialog({
   layout,
   initialValues,
   isLoading,
-  submitLabel = "Submit",
-  cancelLabel = "Cancel",
   onSubmit,
 }: FileFormDialogProps) {
+  const t = useTranslations('Button');
+  const submitLabel = t("create");
+  const cancelLabel = t("cancel");
   const [values, setValues] = useState<Record<string, string | File>>({});
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
@@ -209,7 +211,6 @@ export function FileFormDialog({
     }
   };
 
-  // ... (The entire `renderField` function and the JSX return statement remain exactly the same)
   const renderField = (fieldName: string) => {
     const field = fieldsByName[fieldName];
     if (!field) return null;
@@ -220,7 +221,7 @@ export function FileFormDialog({
           <Label>{field.label} {field.required && <span className="text-red-500">*</span>}</Label>
           <label
             htmlFor={field.name}
-            className="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer transition-colors"
+            className="relative flex flex-col items-center justify-center w-full h-35 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer transition-colors"
           >
             {previewUrls[field.name] ? (
               <>

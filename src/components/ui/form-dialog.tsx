@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export type FieldConfig = {
   name: string;
@@ -51,13 +52,14 @@ export function FormDialog({
   title,
   description,
   fields,
-  submitLabel = "Create",
-  cancelLabel = "Cancel",
   className,
   initialValues,
   isLoading,
   onSubmit,
 }: FormDialogProps): React.ReactElement {
+  const t = useTranslations('Button');
+  const submitLabel = t("create");
+  const cancelLabel = t("cancel");
   const defaultValues = useMemo(() => {
     return fields.reduce<Record<string, string>>((acc, f) => {
       acc[f.name] = f.defaultValue ?? "";

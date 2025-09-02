@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 import { MenuItem, MenuType } from '@/app/menu-items/menu-items-table';
+import {useTranslations} from 'next-intl';
 
-type LanguageCode = "kh" | "en";
+type LanguageCode = "kh" | "en"| "ch";
 
 type Translation = {
   name: string;
@@ -21,7 +22,7 @@ type Translation = {
 const languageNameMap: Record<LanguageCode, string> = {
   kh: "Khmer",
   en: "English",
-
+  ch: "Chinese",
 };
 
 // --- Component Props ---
@@ -31,7 +32,7 @@ type MenuItemDialogProps = {
   isLoading?: boolean;
   onSubmit: (formData: FormData) => Promise<void> | void;
   menuTypes: MenuType[];
-  initialData?: MenuItem | null; // Pass the item being edited here
+  initialData?: MenuItem | null;
 };
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -39,7 +40,8 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTypes, initialData }: MenuItemDialogProps) {
   const [currentLang, setCurrentLang] = useState<LanguageCode>("kh");
   
-  // States for form fields
+  const t = useTranslations('Button');
+  const thead = useTranslations('DialogHeader');
   const [priceCents, setPriceCents] = useState("");
   const [status, setStatus] = useState("1");
   const [menuTypeId, setMenuTypeId] = useState("");
@@ -49,12 +51,11 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
   const [translations, setTranslations] = useState<Record<LanguageCode, Translation>>({
     kh: { name: "", description: "" },
     en: { name: "", description: "" },
-
+    ch: { name: "", description: "" },
   });
   
   const [submitting, setSubmitting] = useState(false);
 
-  // This effect populates the form when editing an item
   useEffect(() => {
     if (initialData && open) {
       // Populate shared fields
@@ -66,7 +67,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
       const newTranslations: Record<LanguageCode, Translation> = {
         kh: { name: "", description: "" },
         en: { name: "", description: "" },
-
+        ch: { name: "", description: "" },
       };
       initialData.translations.forEach(t => {
         if (t.languageCode in newTranslations) {
@@ -91,7 +92,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
       setTranslations({
         kh: { name: "", description: "" },
         en: { name: "", description: "" },
-
+        ch: { name: "", description: "" },
       });
       setCurrentLang("kh");
     }
@@ -133,24 +134,22 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
       toast.error("Missing required fields", { description: "English Name, Type, and Price are required." });
       return;
     }
-    if (!initialData && !imageFile) { // Require image on create
+    if (!initialData && !imageFile) {
         toast.error("Image required", { description: "Please upload an image for the new menu item." });
         return;
     }
 
     setSubmitting(true);
     
-    // Assemble the JSON part
     const menuItemData = {
       priceCents: parseInt(priceCents, 10),
       status: parseInt(status, 10),
       menuTypeId: parseInt(menuTypeId, 10),
       translations: Object.entries(translations)
         .map(([lang, data]) => ({ languageCode: lang, ...data }))
-        .filter(t => t.name.trim() !== ""), // Only send translations with a name
+        .filter(t => t.name.trim() !== ""),
     };
 
-    // Create FormData
     const formData = new FormData();
     formData.append("menuItem", JSON.stringify(menuItemData));
     if (imageFile) {
@@ -168,7 +167,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
   };
 
   const isProcessing = submitting || isLoading;
-  const dialogTitle = initialData ? "Edit Menu Item" : "Create Menu Item";
+  const dialogTitle = initialData ? thead('update_items') : thead('create_items');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -249,9 +248,9 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
             </div>
           </div>
           <DialogFooter className="mt-8 pt-6 border-t border-gray-700">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>{t('cancel')}</Button>
             <Button type="submit" disabled={isProcessing}>
-              {isProcessing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait</> : (initialData ? "Update" : "Create")}
+              {isProcessing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait</> : (initialData ? t('update') : t('create'))}
             </Button>
           </DialogFooter>
         </form>
