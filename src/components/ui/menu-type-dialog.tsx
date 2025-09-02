@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { MenuType } from '@/app/menu-types/menu-type-table';
 
-type LanguageCode = "kh" | "en" | "cn";
+type LanguageCode = "kh" | "en" | "ch";
 
 type Translation = {
   name: string;
@@ -19,7 +19,7 @@ type Translation = {
 const languageNameMap: Record<LanguageCode, string> = {
   kh: "Khmer",
   en: "English",
-  cn: "Chinese",
+  ch: "Chinese",
 };
 
 // This is the structure the backend expects in the request body
@@ -48,7 +48,7 @@ export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData }: Me
   const [translations, setTranslations] = useState<Record<LanguageCode, Translation>>({
     kh: { name: "" },
     en: { name: "" },
-    cn: { name: "" },
+    ch: { name: "" },
   });
   
   const [submitting, setSubmitting] = useState(false);
@@ -58,7 +58,7 @@ export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData }: Me
     if (initialData && open) {
       setStatus(String(initialData.status));
       
-      const newTranslations: Record<LanguageCode, Translation> = { kh: { name: "" }, en: { name: "" }, cn: { name: "" } };
+      const newTranslations: Record<LanguageCode, Translation> = { kh: { name: "" }, en: { name: "" }, ch: { name: "" } };
       initialData.translations.forEach(t => {
         if (t.languageCode in newTranslations) {
           newTranslations[t.languageCode as LanguageCode] = { name: t.name };
@@ -68,7 +68,7 @@ export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData }: Me
     } else {
       // Reset form when opening for "create" or when closing
       setStatus("1");
-      setTranslations({ kh: { name: "" }, en: { name: "" }, cn: { name: "" } });
+      setTranslations({ kh: { name: "" }, en: { name: "" }, ch: { name: "" } });
       setCurrentLang("kh");
     }
   }, [initialData, open]);
@@ -117,7 +117,7 @@ export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData }: Me
         <DialogHeader>
           <DialogTitle className="text-2xl">{dialogTitle}</DialogTitle>
            <div className="flex items-center space-x-2 pt-2">
-            {(["kh", "en", "cn"] as LanguageCode[]).map((lang) => (
+            {(["kh", "en", "ch"] as LanguageCode[]).map((lang) => (
               <Button key={lang} type="button" variant={currentLang === lang ? "default" : "outline"} onClick={() => setCurrentLang(lang)}>
                 {languageNameMap[lang]}
               </Button>
