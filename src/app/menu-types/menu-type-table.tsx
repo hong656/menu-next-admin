@@ -14,11 +14,12 @@ import {
   ChevronsRight,
   Ellipsis,
   BadgePlus,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
   Trash2,
   Pencil,
   Filter,
+  Eye,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -40,13 +41,20 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import {useTranslations} from 'next-intl';
+import { MenuTypeDialog, MenuTypeRequestData } from '@/components/ui/menu-type-dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
-type MenuType = {
-  id: number;
+type MenuTypeTranslation = {
+  languageCode: string;
   name: string;
+};
+
+export type MenuType = {
+  id: number;
   status: number;
   createdAt: string;
   updatedAt: string;
+  translations: MenuTypeTranslation[];
 };
 
 const STATUS_OPTIONS = [
@@ -57,12 +65,11 @@ const STATUS_OPTIONS = [
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
 
-// Configuration for status badges (remains the same)
 const statusConfig = {
   1: {
     text: 'ACTIVE',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    icon: <CheckCircle className="h-3.5 w-3.5" />,
   },
   2: {
     text: 'INACTIVE',
@@ -128,6 +135,8 @@ export default function MenuTypesTable(): React.ReactElement {
   const [isLoading, setIsLoading] = useState(false);
   const [tempStatus, setTempStatus] = useState(status);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [itemForDetail, setItemForDetail] = useState<MenuType | null>(null);
 
   const [confirmationState, setConfirmationState] = useState<{
     menuTypeId: number;
@@ -172,52 +181,16 @@ export default function MenuTypesTable(): React.ReactElement {
   useEffect(() => { if (page !== 1) setPage(1); }, [rowsPerPage]);
   useEffect(() => { if (!editDialogOpen) { setEditingMenuType(null); } }, [editDialogOpen]);
 
-  // --- MODIFIED: Form configuration for creating a menu type ---
-  const createFields: FieldConfig[] = [
-    { name: 'name', label: 'Type Name', required: true, placeholder: 'e.g., Appetizer' },
-    {
-      name: 'status',
-      label: 'Status',
-      required: true,
-      type: 'select',
-      options: [
-        { label: 'Active', value: '1' },
-        { label: 'Inactive', value: '2' },
-      ],
-      defaultValue: '1',
-    },
-  ];
 
-  // --- MODIFIED: Form configuration for editing a menu type ---
-  const editFields: FieldConfig[] = [
-    { name: 'name', label: 'Type Name', required: true, placeholder: 'e.g., Appetizer' },
-    {
-      name: 'status',
-      label: 'Status',
-      required: true,
-      type: 'select',
-      options: [
-        { label: 'Active', value: '1' },
-        { label: 'Inactive', value: '2' },
-      ],
-    },
-  ];
 
-  // --- MODIFIED: Handler for creating a new menu type ---
-  const handleCreate = async (values: Record<string, string>) => {
+  const handleCreate = async (data: MenuTypeRequestData) => {
     try {
-      const createData = {
-        name: values.name,
-        status: Number(values.status),
-      };
-      await axios.post(`${BACKEND_URL}/api/menu-types`, createData, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      await axios.post(`${BACKEND_URL}/api/menu-types`, data);
       await fetchMenuTypes();
-      toast.success("Menu Type Created", { description: "The new menu type has been successfully added." });
+      toast.success("Menu Type Created");
     } catch (error) {
       console.error('Failed to create menu type:', error);
-      toast.error("Creation Failed", { description: "Could not create the menu type. Please try again." });
+      toast.error("Creation Failed");
     }
   };
 
@@ -233,11 +206,9 @@ export default function MenuTypesTable(): React.ReactElement {
     }
   };
 
-  // --- MODIFIED: Updates menu type status ---
   const updateMenuTypeStatus = async (menuTypeId: number, action: StatusAction) => {
     setIsLoading(true);
     try {
-      // Your backend uses a PATCH endpoint for status updates
       await axios.patch(`${BACKEND_URL}/api/menu-types/${menuTypeId}/status`, {
         status: action.status,
       });
@@ -251,22 +222,16 @@ export default function MenuTypesTable(): React.ReactElement {
     }
   };
 
-  const handleUpdate = async (values: Record<string, string>) => {
+  const handleUpdate = async (data: MenuTypeRequestData) => {
     if (!editingMenuType) return;
     try {
-      const updateData = {
-        name: values.name,
-        status: Number(values.status),
-      };
-      await axios.put(`${BACKEND_URL}/api/menu-types/${editingMenuType.id}`, updateData, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      await axios.put(`${BACKEND_URL}/api/menu-types/${editingMenuType.id}`, data);
       await fetchMenuTypes();
-      toast.success("Menu Type Updated", { description: "The menu type has been successfully updated." });
+      toast.success("Menu Type Updated");
       setEditDialogOpen(false);
     } catch (error) {
       console.error('Error updating menu type:', error);
-      toast.error("Update Failed", { description: "Could not update the menu type. Please try again." });
+      toast.error("Update Failed");
     }
   };
 
@@ -367,18 +332,16 @@ export default function MenuTypesTable(): React.ReactElement {
             {state === 'loading' && <TableRow><TableCell colSpan={5} className="py-10 text-center">Loading menu types...</TableCell></TableRow>}
             {state === 'error' && <TableRow><TableCell colSpan={5} className="py-10 text-center text-red-500">Failed to load menu types.</TableCell></TableRow>}
             {state === 'success' && pagedMenuTypes.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center">No results found.</TableCell></TableRow>}
-            {state === 'success' && pagedMenuTypes.map((menuType, idx) => (
-              <TableRow key={menuType.id}>
-                <TableCell className='font-bold'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
-                <TableCell>
-                  <span className="font-medium">{menuType.name}</span>
-                </TableCell>
-                <TableCell>
-                  <TableStatusBadge status={menuType.status} />
-                </TableCell>
-                <TableCell>
-                  {new Date(menuType.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </TableCell>
+            {state === 'success' && pagedMenuTypes.map((menuType, idx) => {
+              const englishTranslation = menuType.translations.find(t => t.languageCode === 'en') || { name: 'N/A' };
+              return (
+                <TableRow key={menuType.id}>
+                  <TableCell className='font-bold'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
+                  <TableCell>
+                    <span className="font-medium">{englishTranslation.name}</span>
+                  </TableCell>
+                  <TableCell><TableStatusBadge status={menuType.status} /></TableCell>
+                  <TableCell>{new Date(menuType.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -387,6 +350,9 @@ export default function MenuTypesTable(): React.ReactElement {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => { setItemForDetail(menuType); setDetailDialogOpen(true); }}>
+                        <Eye className="mr-2 h-4 w-4" /> View Detail
+                      </DropdownMenuItem>
                       <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(menuType)}>
                         <Pencil className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
@@ -404,7 +370,8 @@ export default function MenuTypesTable(): React.ReactElement {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -439,7 +406,7 @@ export default function MenuTypesTable(): React.ReactElement {
           </div>
           <div className="flex items-center gap-2">
             <span className='font-bold'>Page {page} of {totalPages}</span>
-            <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
+            <div className="ml-2 inline-flex rounded-md space-x-2">
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
@@ -449,27 +416,41 @@ export default function MenuTypesTable(): React.ReactElement {
         </div>
       </div>
 
-      <FormDialog
+      <MenuTypeDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={tdialog('create_type')}
-        fields={createFields}
-        submitLabel="Create"
         onSubmit={handleCreate}
       />
 
-      <FormDialog
+      <MenuTypeDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        title={tdialog('update_type')}
-        fields={editFields}
-        submitLabel="Update"
-        initialValues={editingMenuType ? {
-          name: editingMenuType.name,
-          status: String(editingMenuType.status),
-        } : undefined}
         onSubmit={handleUpdate}
+        initialData={editingMenuType}
       />
+
+      <AlertDialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Menu Type Details</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="grid gap-4 py-4">
+            {itemForDetail?.translations.map((translation) => (
+              <div key={translation.languageCode} className="space-y-2">
+                <h4 className="font-medium leading-none">
+                  {translation.languageCode.toUpperCase()}
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Name:</strong> {translation.name}
+                </p>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

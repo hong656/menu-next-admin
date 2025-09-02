@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import {
-  CheckCircle2,
+  CheckCircle,
   XCircle,
   Trash2,
 } from 'lucide-react';
@@ -26,7 +26,7 @@ const statusConfig = {
   1: {
     text: 'ACTIVE',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
+    icon: <CheckCircle className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />,
   },
   2: {
     text: 'INACTIVE',

@@ -15,7 +15,7 @@ import {
   ChevronsRight,
   Ellipsis,
   BadgePlus,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
   Trash2,
   Image as ImageIcon,
@@ -48,6 +48,11 @@ import { MenuItemDialog } from '@/components/ui/menu-item-dialog';
 import {useTranslations} from 'next-intl';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
+type MenuTypeTranslation = {
+  languageCode: string;
+  name: string;
+};
+
 type MenuItemTranslation = {
   languageCode: string;
   name: string;
@@ -65,7 +70,8 @@ export type MenuItem = {
 
 export type MenuType = {
   id: number;
-  name: string;
+  status: number;
+  translations: MenuTypeTranslation[];
 };
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
@@ -84,7 +90,7 @@ const statusConfig = {
   1: { // Active
     text: 'ACTIVE',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    icon: <CheckCircle className="h-3.5 w-3.5" />,
   },
   2: { // Inactive
     text: 'INACTIVE',
@@ -241,16 +247,14 @@ export default function MenuItemTable(): React.ReactElement {
     if(page !== 1) setPage(1);
   }, [status, type, rowsPerPage]);
 
-  const fetchMenuTypes = async () => {
+    const fetchMenuTypes = async () => {
     try {
-      const { data } = await axios.get(`${BACKEND_URL}/api/menu-types/get-all`);
-      const activeTypes = data.filter((type: { status: number }) => type.status === 1);
+      const { data } = await axios.get<MenuType[]>(`${BACKEND_URL}/api/menu-types/get-all`);
+      const activeTypes = data.filter((type) => type.status === 1);
       setMenuTypes(activeTypes);
     } catch (error) {
       console.error("Failed to fetch menu types:", error);
-      toast.error("Failed to load menu categories", {
-        description: "Could not load categories for the dropdown. Please try refreshing.",
-      });
+      toast.error("Failed to load menu categories");
     }
   };
 
@@ -285,50 +289,6 @@ export default function MenuItemTable(): React.ReactElement {
   useEffect(() => {
     setPage(1);
   }, [query, status, rowsPerPage]);
-
-  const fields: FieldConfig[] = [
-    { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
-    {
-      name: 'menuTypeId',
-      label: 'Type',
-      required: true,
-      type: 'select',
-      placeholder: 'Select a type',
-      options: menuTypes.map(type => ({
-        label: type.name,
-        value: String(type.id)
-      }))
-    },
-    { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
-    { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
-    { name: 'status', label: 'Status', type: 'select', required: true, options: [
-      { label: 'Active', value: '1' },
-      { label: 'Inactive', value: '2' }
-    ], defaultValue: '1' },
-  ];
-
-  const editFields: FieldConfig[] = [
-    { name: 'name', label: 'Name', required: true, placeholder: 'e.g., Orange Juice' },
-    {
-      name: 'menuTypeId',
-      label: 'Type',
-      required: true,
-      type: 'select',
-      placeholder: 'Select a type',
-      options: menuTypes.map(type => ({
-        label: type.name,
-        value: String(type.id)
-      }))
-    },
-    { name: 'description', label: 'Description', required: true, placeholder: 'e.g., A juicy orange juice' },
-    { name: 'priceCents', label: 'Price (in cents)', type: 'text', required: true, placeholder: '1250' },
-    { name: 'image', label: 'Image URL', type: 'file', required: true, placeholder: '/images/your-image.jpg' },
-    { name: 'status', label: 'Status', type: 'select', required: true, options: [
-      { label: 'Active', value: '1' },
-      { label: 'Inactive', value: '2' }
-    ] },
-  ];
 
   const handleCreate = async (formData: FormData) => {
     try {
@@ -482,11 +442,14 @@ export default function MenuItemTable(): React.ReactElement {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All</SelectItem>
-                      {menuTypes.map((opt) => (
-                        <SelectItem key={opt.id} value={String(opt.id)}>
-                          {opt.name}
-                        </SelectItem>
-                      ))}
+                      {menuTypes.map((opt) => {
+                        const englishName = opt.translations.find(t => t.languageCode === 'en')?.name || `Type #${opt.id}`;
+                        return (
+                          <SelectItem key={opt.id} value={String(opt.id)}>
+                            {englishName}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -549,6 +512,7 @@ export default function MenuItemTable(): React.ReactElement {
                 ? `${BACKEND_URL}${item.imageUrl}`
                 : item.imageUrl;
                 const englishTranslation = item.translations.find(t => t.languageCode === 'en') || { name: 'N/A', description: '' };
+                const menuTypeName = item.menuType.translations.find(t => t.languageCode === 'en')?.name || 'N/A';
               return (
                 <TableRow key={item.id}>
                   <TableCell className='font-bold text-md'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
@@ -588,7 +552,7 @@ export default function MenuItemTable(): React.ReactElement {
                   </TableCell>
                   <TableCell className="font-medium">{formatPrice(item.priceCents)}</TableCell>
                   <TableCell>
-                    <Badge>{item.menuType?.name || 'N/A'}</Badge>
+                    <Badge>{menuTypeName}</Badge>
                   </TableCell>
                   <TableCell>
                     <MenuItemStatusBadge status={item.status} />
@@ -658,7 +622,7 @@ export default function MenuItemTable(): React.ReactElement {
             <span className='font-bold'>
               Page {page} of {totalPages}
             </span>
-            <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
+            <div className="ml-2 inline-flex rounded-md space-x-2">
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>

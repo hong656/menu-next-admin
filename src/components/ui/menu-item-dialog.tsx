@@ -25,7 +25,6 @@ const languageNameMap: Record<LanguageCode, string> = {
   ch: "Chinese",
 };
 
-// --- Component Props ---
 type MenuItemDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -230,7 +229,14 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
                     <Select onValueChange={setMenuTypeId} value={menuTypeId} required>
                         <SelectTrigger className="w-full"><SelectValue placeholder="Select a type" /></SelectTrigger>
                         <SelectContent>
-                            {menuTypes.map(type => <SelectItem key={type.id} value={String(type.id)}>{type.name}</SelectItem>)}
+                            {menuTypes.map(type => {
+                                const englishName = type.translations.find(t => t.languageCode === 'en')?.name || `Type #${type.id}`;
+                                return (
+                                    <SelectItem key={type.id} value={String(type.id)}>
+                                        {englishName}
+                                    </SelectItem>
+                                );
+                            })}
                         </SelectContent>
                     </Select>
                 </div>

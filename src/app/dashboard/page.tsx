@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, UtensilsCrossed, Soup, CheckCircle2, Trash2, Maximize, Minimize, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, UtensilsCrossed, Soup, CheckCircle, Trash2, Maximize, Minimize, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import axios from 'axios';
 import {
@@ -182,7 +182,7 @@ const OrderListItem = ({ order, isSelected, onSelect }: { order: Order; isSelect
     const statusConfig: Record<OrderStatus, { icon: React.ReactNode; border: string; bg: string; text: string; }> = {
         new: { icon: <Badge className="absolute top-2 right-2 bg-green-500">NEW</Badge>, border: "border-green-500", bg: "hover:bg-green-500/10", text: "text-green-800" },
         pending: { icon: <Soup className="h-5 w-5 text-yellow-500" />, border: "border-yellow-500", bg: "hover:bg-yellow-500/10", text: "text-yellow-800" },
-        completed: { icon: <CheckCircle2 className="h-5 w-5 text-blue-500" />, border: "border-blue-500", bg: "hover:bg-blue-500/10", text: "text-blue-800" },
+        completed: { icon: <CheckCircle className="h-5 w-5 text-blue-500" />, border: "border-blue-500", bg: "hover:bg-blue-500/10", text: "text-blue-800" },
         rejected: { icon: <Trash2 className="h-5 w-5 text-red-500" />, border: "border-red-500", bg: "hover:bg-red-500/10", text: "text-red-800" },
     };
     

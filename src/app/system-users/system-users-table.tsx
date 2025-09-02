@@ -14,7 +14,7 @@ import {
   ChevronsRight,
   Ellipsis,
   BadgePlus,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
   Trash2,
   Filter,
@@ -83,7 +83,7 @@ function getRoleLabel(role: number | string | null | undefined): string {
     1: { // Active
       text: 'ACTIVE',
       classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-      icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+      icon: <CheckCircle className="h-3.5 w-3.5" />,
     },
     2: { // Inactive
       text: 'INACTIVE',
@@ -548,7 +548,7 @@ export default function SystemUsersTable(): React.ReactElement {
             <span className='font-bold'>
               Page {page} of {totalPages}
             </span>
-            <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
+            <div className="ml-2 inline-flex rounded-md space-x-2">
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>

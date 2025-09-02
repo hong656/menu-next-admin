@@ -15,7 +15,7 @@ import {
   ChevronsRight,
   Ellipsis,
   BadgePlus,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
   Trash2,
   Image as ImageIcon,
@@ -62,17 +62,15 @@ const STATUS_OPTIONS = [
   { label: 'Inactive', value: 'inactive' },
 ] as const;
 
-// Helper function to check for a valid, absolute URL
 const isUrlValid = (url: string | null | undefined): url is string => {
     return typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'));
 }
 
-// --- STATUS CONFIG (Generic and Reusable) ---
 const statusConfig = {
   1: { // Active
     text: 'ACTIVE',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    icon: <CheckCircle className="h-3.5 w-3.5" />,
   },
   2: { // Inactive
     text: 'INACTIVE',
@@ -486,7 +484,7 @@ export default function BannerTable(): React.ReactElement {
               <span className='font-bold'>
                 Page {page} of {totalPages}
               </span>
-              <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
+              <div className="ml-2 inline-flex rounded-md space-x-2">
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>

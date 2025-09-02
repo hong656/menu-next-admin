@@ -12,8 +12,7 @@ import {
   ChevronRight,
   ChevronsRight,
   Ellipsis,
-  CheckCircle2,
-  XCircle,
+  CheckCircle,
   Clock9,
   Trash2,
   Filter,
@@ -40,19 +39,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import {useTranslations} from 'next-intl';
 
+type MenuItemTranslation = {
+  languageCode: string;
+  name: string;
+  description: string;
+};
+
+type MenuItem = {
+  id: number;
+  priceCents: number;
+  imageUrl: string;
+  translations: MenuItemTranslation[];
+};
+
 type OrderItem = {
-    id: number;
-    menuItem: {
-        id: number;
-        name: string;
-        description: string;
-        priceCents: number;
-        imageUrl: string;
-        available: boolean;
-    };
-    quantity: number;
-    unitPrice: number;
-    lineTotal: number;
+  id: number;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  menuItem: MenuItem;
 };
 
 type TableInfo = {
@@ -86,7 +91,7 @@ const statusConfig = {
   1: {
     text: 'Received',
     classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-    icon: <XCircle className="!h-4 !w-4" />,
+    icon: <CheckCircle className="!h-4 !w-4" />,
   },
   2: {
     text: 'Preparing',
@@ -96,7 +101,7 @@ const statusConfig = {
   3: {
     text: 'Completed',
     classes: 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-400',
-    icon: <CheckCircle2 className="!h-4 !w-4" />,
+    icon: <CheckCircle className="!h-4 !w-4" />,
   },
   4: {
     text: 'Canceled',
@@ -399,14 +404,23 @@ export default function OrderTable(): React.ReactElement {
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm" className='cursor-pointer'>View Items</Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[825px]">
+                        <DialogContent className="sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle>Order Items (Table {order.table.number})</DialogTitle>
                         </DialogHeader>
-                        <div className='max-h-96 overflow-y-auto rounded-md p-4 border'>
-                            <pre className="text-sm">
-                            {JSON.stringify(order.orderItems, null, 2)}
-                            </pre>
+                        <div className='max-h-96 overflow-y-auto rounded-md p-1'>
+                            {order.orderItems.map(orderItem => {
+                                const englishName = orderItem.menuItem.translations.find(
+                                    t => t.languageCode === 'en'
+                                )?.name || 'Name not available';
+
+                                return (
+                                    <div key={orderItem.id} className="flex justify-between items-center py-3 border-b last:border-b-0">
+                                        <span className="font-semibold">{englishName}</span>
+                                        <span className="font-medium">x {orderItem.quantity}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                         </DialogContent>
                     </Dialog>
@@ -481,7 +495,7 @@ export default function OrderTable(): React.ReactElement {
             <span className='font-bold'>
               Page {page} of {totalPages}
             </span>
-            <div className="ml-2 inline-flex rounded-md shadow-sm space-x-2">
+            <div className="ml-2 inline-flex rounded-md space-x-2">
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
                 <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
