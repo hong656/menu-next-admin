@@ -21,9 +21,10 @@ import {
   Image as ImageIcon,
   Eye,
   Filter,
+  Trash,
+  Pencil,
 } from 'lucide-react';
 import { toast } from "sonner";
-import { Toaster } from "@/components/ui/sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -438,10 +439,10 @@ export default function BannerTable(): React.ReactElement {
                         <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer"><Ellipsis className='h-5 w-5' /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(banner)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(banner)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                         {statusActions.map((action) => (
                             <DropdownMenuItem key={action.status} className={action.color} onClick={() => setConfirmationState({ bannerId: banner.id, action })} disabled={isLoading || banner.status === action.status}>
-                                {action.label}
+                              <Trash className="mr-2 h-4 w-4" />  {action.label}
                             </DropdownMenuItem>
                         ))}
                       </DropdownMenuContent>

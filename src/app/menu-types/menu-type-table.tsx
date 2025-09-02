@@ -76,7 +76,6 @@ const statusConfig = {
   },
 } as const;
 
-// --- MODIFIED: Action for deleting a menu type ---
 interface StatusAction {
   status: number;
   label: string;
@@ -361,7 +360,7 @@ export default function MenuTypesTable(): React.ReactElement {
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead className='text-right'>Actions</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -380,7 +379,7 @@ export default function MenuTypesTable(): React.ReactElement {
                 <TableCell>
                   {new Date(menuType.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </TableCell>
-                <TableCell className='text-right'>
+                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">

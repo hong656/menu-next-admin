@@ -18,6 +18,8 @@ import {
   XCircle,
   Trash2,
   Filter,
+  Pencil,
+  Trash,
 } from 'lucide-react';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
@@ -488,7 +490,7 @@ export default function SystemUsersTable(): React.ReactElement {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(user)}>Edit</DropdownMenuItem>
+                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(user)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                       {statusActions.map((action) => (
                         <DropdownMenuItem
                           key={action.status}
@@ -496,7 +498,7 @@ export default function SystemUsersTable(): React.ReactElement {
                           onClick={() => setConfirmationState({ userId: user.id, action })}
                           disabled={isLoading}
                         >
-                          {action.label}
+                          <Trash className="mr-2 h-4 w-4" /> {action.label}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>

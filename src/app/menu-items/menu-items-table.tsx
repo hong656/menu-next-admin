@@ -21,6 +21,8 @@ import {
   Image as ImageIcon,
   Eye,
   Filter,
+  Pencil,
+  Trash,
 } from 'lucide-react';
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -367,8 +369,7 @@ export default function MenuItemTable(): React.ReactElement {
         description: "has been successfully deleted.",
       });
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || `Failed to update item to ${action.label}`;
+      const errorMessage =error.response?.data?.message || `Failed to update item to ${action.label}`;
       console.error(`Error updating item status to ${action.label}:`, error);
       toast.error("Delete Failed", {
       description: "The menu item could not be delete. Please try again.",
@@ -601,20 +602,20 @@ export default function MenuItemTable(): React.ReactElement {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onSelect={() => { setItemForDetail(item); setDetailDialogOpen(true); }}>
-                          View Detail
+                          <Eye className="mr-2 h-4 w-4" /> View Detail
                         </DropdownMenuItem>
                         <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(item)}>
-                          Edit
+                          <Pencil className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
                         {statusActions.map((action) => (
-                            <DropdownMenuItem
-                                key={action.status}
-                                className={action.color}
-                                onClick={() => setConfirmationState({ itemId: item.id, action })}
-                                disabled={isLoading || item.status === action.status}
-                            >
-                                {action.label}
-                            </DropdownMenuItem>
+                          <DropdownMenuItem
+                              key={action.status}
+                              className={action.color}
+                              onClick={() => setConfirmationState({ itemId: item.id, action })}
+                              disabled={isLoading || item.status === action.status}
+                          >
+                            <Trash className="mr-2 h-4 w-4" />  {action.label}
+                          </DropdownMenuItem>
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>

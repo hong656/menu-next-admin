@@ -18,6 +18,9 @@ import {
   XCircle,
   Trash2,
   Filter,
+  Pencil,
+  Trash,
+  QrCode,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -28,7 +31,6 @@ import {
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import Link from 'next/link';
 import { toast } from "sonner";
-import { Toaster } from "@/components/ui/sonner";
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -446,9 +448,9 @@ export default function TablesTable(): React.ReactElement {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <Link href={`/tables/${table.id}`}>
-                        <DropdownMenuItem className='text-green-500 focus:text-green-500 focus:bg-green-500/10'>Get Qr Code</DropdownMenuItem>
+                        <DropdownMenuItem className='text-green-500 focus:text-green-500 focus:bg-green-500/10'><QrCode className="mr-2 h-4 w-4" />Get Qr Code</DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(table)}>Edit</DropdownMenuItem>
+                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(table)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                       {statusActions.map((action) => (
                         <DropdownMenuItem
                           key={action.status}
@@ -456,7 +458,7 @@ export default function TablesTable(): React.ReactElement {
                           onClick={() => setConfirmationState({ tableId: table.id, action })}
                           disabled={isLoading}
                         >
-                          {action.label}
+                          <Trash className="mr-2 h-4 w-4" /> {action.label}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
