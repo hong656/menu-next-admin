@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {useTranslations} from 'next-intl';
+import { UserProfile } from '@/components/ui/user-profile';
 
 type SubNavItem = {
   href: string;
@@ -97,6 +98,7 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
       )}
     >
       <nav className="flex-1 space-y-2 p-4 text-sm font-medium">
+        <UserProfile/>
         <ul>
           {sidebarNavItems.map((item, index) => {
             const prevGroup =

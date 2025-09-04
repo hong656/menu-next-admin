@@ -42,5 +42,12 @@
 
         "create_banner": "បង្កើតផ្ទាំង",
         "update_banner": "អាប់ដេតផ្ទាំង"
+    },
+    "UserProfile": {
+        "profile": "ប្រវត្តិរូប",
+        "account": "គណនី",
+        "settings": "ការកំណត់",
+        "theme": "ផ្ទៃ",
+        "logout": "ចាកចេញ"
     }
 }

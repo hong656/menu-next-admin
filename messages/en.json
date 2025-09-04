@@ -42,5 +42,12 @@
 
         "create_banner": "Create Banner",
         "update_banner": "Update Banner"
+    },
+    "UserProfile": {
+        "profile": "Profile",
+        "account": "Account",
+        "settings": "Settings",
+        "theme": "Theme",
+        "logout": "Logout"
     }
 }

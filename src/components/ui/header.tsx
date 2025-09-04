@@ -19,9 +19,7 @@ interface HeaderProps {
 
 const Header = ({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
   const t = useTranslations('Header');
-  const { user, logout } = useAuth();
   const pathname = usePathname();
-  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   const segments = pathname?.split('/').filter(Boolean) ?? [];
   const formatLabel = (value: string) =>
@@ -77,31 +75,9 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
 
         <div className="flex items-center space-x-4">
           <ModeToggle />
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            <span>{user?.username || 'User'}</span>
-          </div>
           <LocaleSwitcher />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsLogoutConfirmOpen(true)}
-            className="flex items-center space-x-2"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>{t('logout')}</span>
-          </Button>
         </div>
       </header>
-      <ConfirmationDialog
-        isOpen={isLogoutConfirmOpen}
-        onClose={() => setIsLogoutConfirmOpen(false)}
-        onConfirm={logout}
-        title="Are you sure you want to logout?"
-        description="You will be returned to the login page."
-        confirmText="Logout"
-        cancelText="Cancel"
-      />
     </>
   );
 };
