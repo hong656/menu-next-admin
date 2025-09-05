@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import ProtectedRoute from '@/components/auth/protected-route';
 
 // Define a type for the user profile data for type safety
 interface UserProfile {
@@ -85,63 +86,65 @@ export default function ProfilePage() {
   const statusInfo = getStatusInfo(profile.status);
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 md:p-8">
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="text-2xl">
-                {profile.username.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-2xl">{profile.username}</CardTitle>
-              <CardDescription>{profile.email}</CardDescription>
+    <ProtectedRoute>
+      <div className="container mx-auto p-4 sm:p-6 md:p-8">
+        <Card className="max-w-3xl mx-auto">
+          <CardHeader>
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-16 w-16">
+                <AvatarFallback className="text-2xl">
+                  {profile.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-2xl">{profile.username}</CardTitle>
+                <CardDescription>{profile.email}</CardDescription>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" value={profile.username} readOnly />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input id="username" value={profile.username} readOnly />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={profile.email} readOnly />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  value={profile.fullName || 'Not Provided'}
+                  readOnly
+                  className="italic"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Input id="role" value={getRoleName(profile.role)} readOnly />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Input
+                  id="status"
+                  value={statusInfo.name}
+                  readOnly
+                  className={statusInfo.className} // Apply color based on status
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="userId">User ID</Label>
+                <Input id="userId" value={profile.id} readOnly />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={profile.email} readOnly />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={profile.fullName || 'Not Provided'}
-                readOnly
-                className="italic"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Input id="role" value={getRoleName(profile.role)} readOnly />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Input
-                id="status"
-                value={statusInfo.name}
-                readOnly
-                className={statusInfo.className} // Apply color based on status
-              />
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="userId">User ID</Label>
-              <Input id="userId" value={profile.id} readOnly />
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-end">
-          <Button disabled>Save Changes</Button>
-        </CardFooter>
-      </Card>
-    </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button disabled>Save Changes</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </ProtectedRoute>
   );
 }
