@@ -21,11 +21,12 @@ import {
 import { cn } from "@/lib/utils";
 import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Textarea } from "./textarea";
 
 export type FieldConfig = {
   name: string;
   label: string;
-  type?: "text" | "email" | "password" | "select" | "file";
+  type?: "text" | "email" | "password" | "select" | "file" | "textarea";
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
@@ -110,7 +111,10 @@ export function FormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className={cn("sm:max-w-md", className)}>
+      <DialogContent
+        className={cn("sm:max-w-md", className)}
+        aria-describedby={description ? undefined : ""}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
@@ -164,6 +168,15 @@ export function FormDialog({
                     </div>
                   )}
                 </div>
+              ) : field.type === "textarea" ? (
+                <Textarea
+                  id={field.name}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  value={values[field.name] ?? ""}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                />
               ) : (
                 <Input
                   id={field.name}

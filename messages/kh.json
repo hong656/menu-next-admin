@@ -14,6 +14,8 @@
 
         "Authentication": "ការផ្ទៀងផ្ទាត់",
         "system_users": "អ្នកប្រើប្រាស់ប្រព័ន្ធ",
+        "role": "តួនាទី",
+        "role_permission": "តួនាទី និងសិទ្ធិ",
 
         "Interface Settings": "ការកំណត់អន្តរកម្ម",
         "banner": "ផ្ទាំង",
@@ -41,7 +43,10 @@
         "update_user": "អាប់ដេតអ្នកប្រើប្រាស់",
 
         "create_banner": "បង្កើតផ្ទាំង",
-        "update_banner": "អាប់ដេតផ្ទាំង"
+        "update_banner": "អាប់ដេតផ្ទាំង",
+
+        "create_role": "បង្កើតតួនាទី",
+        "update_role": "អាប់ដេតតួនាទី"
     },
     "UserProfile": {
         "profile": "ប្រវត្តិរូប",

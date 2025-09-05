@@ -14,6 +14,8 @@
 
         "Authentication": "Authentication",
         "system_users": "System Users",
+        "role": "Roles",
+        "role_permission": "Role Permissions",
 
         "Interface Settings": "Interface Settings",
         "banner": "Banners",
@@ -41,7 +43,10 @@
         "update_user": "Update User",
 
         "create_banner": "Create Banner",
-        "update_banner": "Update Banner"
+        "update_banner": "Update Banner",
+
+        "create_role": "Create Role",
+        "update_role": "Update Role"
     },
     "UserProfile": {
         "profile": "Profile",

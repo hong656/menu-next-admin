@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { MenuType } from '@/app/menu-types/menu-type-table';
+import { cn } from "@/lib/utils";
 
 type LanguageCode = "kh" | "en" | "ch";
 
@@ -25,6 +26,8 @@ const languageNameMap: Record<LanguageCode, string> = {
 // This is the structure the backend expects in the request body
 export type MenuTypeRequestData = {
     status: number;
+    description?: string;
+    className?: string;
     translations: {
         languageCode: string;
         name: string;
@@ -36,11 +39,13 @@ type MenuTypeDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: MenuTypeRequestData) => Promise<void> | void;
-  initialData?: MenuType | null; // Pass the item being edited here
+  initialData?: MenuType | null;
+  className?: string;
+  description?: string;
 };
 
 
-export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData }: MenuTypeDialogProps) {
+export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData, className, description }: MenuTypeDialogProps) {
   const [currentLang, setCurrentLang] = useState<LanguageCode>("kh");
   
   // States for form fields
@@ -113,7 +118,10 @@ export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData }: Me
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg border-gray-700">
+      <DialogContent 
+      className={cn("sm:max-w-md", className)}
+      aria-describedby={description ? undefined : ""}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl">{dialogTitle}</DialogTitle>
            <div className="flex items-center space-x-2 pt-2">
@@ -128,7 +136,7 @@ export function MenuTypeDialog({ open, onOpenChange, onSubmit, initialData }: Me
           <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name in {languageNameMap[currentLang]} <span className="text-red-500">*</span></Label>
-                <Input id="name" name="name" value={translations[currentLang].name} onChange={handleTranslationChange} required />
+                <Input placeholder="Enter name" id="name" name="name" value={translations[currentLang].name} onChange={handleTranslationChange} required />
               </div>
               <div className="space-y-2">
                   <Label htmlFor="status">Status <span className="text-red-500">*</span></Label>

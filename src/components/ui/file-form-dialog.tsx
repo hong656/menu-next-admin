@@ -48,6 +48,7 @@ export type FileFormDialogProps = {
   };
   initialValues?: Record<string, string>;
   isLoading?: boolean;
+  className?: string;
   submitLabel?: string;
   cancelLabel?: string;
   onSubmit: (formData: FormData) => Promise<void> | void;
@@ -221,7 +222,7 @@ export function FileFormDialog({
           <Label>{field.label} {field.required && <span className="text-red-500">*</span>}</Label>
           <label
             htmlFor={field.name}
-            className="relative flex flex-col items-center justify-center w-full h-35 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer transition-colors"
+            className="relative flex flex-col items-center justify-center w-full h-50 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer transition-colors"
           >
             {previewUrls[field.name] ? (
               <>
@@ -310,15 +311,17 @@ export function FileFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl border-gray-700">
+      <DialogContent
+        className=""
+        aria-describedby={description ? undefined : ""}>
         <DialogHeader>
           <DialogTitle className="text-2xl">{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-4">
-            <div className="md:col-span-1 space-y-4">{layout.fileFields.map(fieldName => renderField(fieldName))}</div>
-            <div className="md:col-span-2 space-y-4">{layout.dataFields.map(fieldName => renderField(fieldName))}</div>
+            <div className="md:col-span-6 space-y-4">{layout.fileFields.map(fieldName => renderField(fieldName))}</div>
+            <div className="md:col-span-6 space-y-4">{layout.dataFields.map(fieldName => renderField(fieldName))}</div>
           </div>
           <DialogFooter className="mt-8 pt-6 border-t border-gray-700">
             <Button

@@ -11,6 +11,7 @@ import { Loader2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 import { MenuItem, MenuType } from '@/app/menu-items/menu-items-table';
 import {useTranslations} from 'next-intl';
+import { Textarea } from "./textarea";
 
 type LanguageCode = "kh" | "en"| "ch";
 
@@ -97,7 +98,7 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
     }
   }, [initialData, open]);
 
-  const handleTranslationChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleTranslationChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setTranslations(prev => ({
       ...prev,
@@ -213,15 +214,15 @@ export function MenuItemDialog({ open, onOpenChange, isLoading, onSubmit, menuTy
             <div className="md:col-span-2 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name in {languageNameMap[currentLang]} <span className="text-red-500">*</span></Label>
-                <Input id="name" name="name" value={translations[currentLang].name} onChange={handleTranslationChange} required />
+                <Input placeholder="Enter name" id="name" name="name" value={translations[currentLang].name} onChange={handleTranslationChange} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description in {languageNameMap[currentLang]}</Label>
-                <Input id="description" name="description" value={translations[currentLang].description} onChange={handleTranslationChange} />
+                <Textarea placeholder="Enter description" id="description" name="description" value={translations[currentLang].description} onChange={handleTranslationChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="priceCents">Price (in cents) <span className="text-red-500">*</span></Label>
-                <Input id="priceCents" name="priceCents" type="number" value={priceCents} onChange={e => setPriceCents(e.target.value)} required />
+                <Input placeholder="Enter price" id="priceCents" name="priceCents" type="number" value={priceCents} onChange={e => setPriceCents(e.target.value)} required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

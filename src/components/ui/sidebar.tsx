@@ -67,8 +67,9 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
       icon: Lock,
       group: 'Core Administration',
       subItems: [
-        // { href: '#', label: 'Role & Permission' },
         { href: '/system-users', label: t('system_users') },
+        { href: '/role', label: t('role') },
+        { href: '/role-permissions', label: t('role_permission') },
       ],
     },
     {
@@ -97,7 +98,7 @@ const Sidebar = ({ isSidebarOpen }: Omit<SidebarProps, 'setIsSidebarOpen'>) => {
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
-      <nav className="flex-1 space-y-2 p-4 text-sm font-medium">
+      <nav className="flex-1 space-y-2 p-4 text-sm font-medium overflow-y-auto">
         <UserProfile/>
         <ul>
           {sidebarNavItems.map((item, index) => {
