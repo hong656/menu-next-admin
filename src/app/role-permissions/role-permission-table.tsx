@@ -252,15 +252,13 @@ function PermissionGroupNode({ group, selectedIds, onGroupCheck, onPermissionChe
 
     return (
         <Collapsible defaultOpen={isInitiallyOpen} className="space-y-2">
-            {/* FIX: Main flex container for the row */}
             <div className="flex items-center space-x-3 p-2.5 rounded-md transition-colors hover:bg-muted/50">
-                {/* Checkbox is now a sibling, not a child, of the trigger */}
                 <Checkbox
-                    id={`group-${group.id}`}
-                    checked={groupCheckedState}
-                    onCheckedChange={(isChecked) => onGroupCheck(group, !!isChecked)}
+                  className='w-6 h-6 cursor-pointer'
+                  id={`group-${group.id}`}
+                  checked={groupCheckedState}
+                  onCheckedChange={(isChecked) => onGroupCheck(group, !!isChecked)}
                 />
-                {/* The trigger now wraps the chevron and the label, and renders as a div */}
                 <CollapsibleTrigger asChild>
                     <div className="flex flex-1 items-center text-left cursor-pointer">
                         <label htmlFor={`group-${group.id}`} className="font-semibold text-base flex-1 cursor-pointer">
@@ -304,15 +302,13 @@ function PermissionNode({ permission, selectedIds, onPermissionCheck, onDetailCh
 
     return (
         <Collapsible defaultOpen={isInitiallyOpen} className="space-y-2">
-             {/* FIX: Main flex container for the row */}
             <div className="flex items-center space-x-3 p-2.5 rounded-md transition-colors hover:bg-muted/50">
-                {/* Checkbox is a sibling */}
                 <Checkbox
-                    id={`permission-${permission.id}`}
-                    checked={permissionCheckedState}
-                    onCheckedChange={(isChecked) => onPermissionCheck(permission, !!isChecked)}
+                  className='w-5 h-5 cursor-pointer'
+                  id={`permission-${permission.id}`}
+                  checked={permissionCheckedState}
+                  onCheckedChange={(isChecked) => onPermissionCheck(permission, !!isChecked)}
                 />
-                {/* Trigger wraps the rest of the elements */}
                 <CollapsibleTrigger asChild>
                     <div className="flex flex-1 items-center text-left cursor-pointer">
                         <label htmlFor={`permission-${permission.id}`} className="font-medium text-base flex-1 cursor-pointer">
@@ -327,9 +323,10 @@ function PermissionNode({ permission, selectedIds, onPermissionCheck, onDetailCh
                     {permission.permissionDetails.map((detail) => (
                         <div key={detail.id} className="flex items-center space-x-3">
                             <Checkbox
-                                id={`detail-${detail.id}`}
-                                checked={selectedIds.has(detail.id)}
-                                onCheckedChange={(isChecked) => onDetailCheck(detail.id, !!isChecked)}
+                              className='w-4 h-4 cursor-pointer'
+                              id={`detail-${detail.id}`}
+                              checked={selectedIds.has(detail.id)}
+                              onCheckedChange={(isChecked) => onDetailCheck(detail.id, !!isChecked)}
                             />
                             <label htmlFor={`detail-${detail.id}`} className="text-sm text-muted-foreground cursor-pointer">
                                 {detail.name}

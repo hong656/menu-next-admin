@@ -219,7 +219,6 @@ export default function BannerTable(): React.ReactElement {
     }
   }, [editDialogOpen]);
 
-  // --- FORM FIELDS UPDATED FOR BANNERS ---
   const fields: FieldConfig[] = [
     { name: 'title', label: 'Title', required: true, placeholder: 'e.g., Summer Promotion' },
     { name: 'image', label: 'Banner Image', type: 'file', required: true },

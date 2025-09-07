@@ -43,96 +43,47 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label"
 import {useTranslations} from 'next-intl';
 
+// --- UPDATED TYPES ---
+type Role = {
+  id: number;
+  name: string;
+  description: string;
+};
+
 type SystemUser = {
   id: number;
   username: string;
   email: string;
   fullName: string | null;
-  role: number | null;
-  status: number | null; // 1 = active, 2 = inactive
+  roles: string[]; // FIX #1: Expect an array of strings, which matches the backend API response
+  status: number | null;
 };
 
 type FetchState = 'idle' | 'loading' | 'error' | 'success';
 
+// --- UNCHANGED CONSTANTS & HELPERS ---
 const STATUS_OPTIONS = [
   { label: 'All', value: 'all' },
   { label: 'Active', value: 'active' },
   { label: 'Inactive', value: 'inactive' },
 ] as const;
 
-const ROLE_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: 'Tester', value: '1' },
-  { label: 'User', value: '2' },
-  { label: 'Admin', value: '3' },
-];
+const statusConfig = {
+  1: { text: 'ACTIVE', classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400', icon: <CheckCircle className="h-3.5 w-3.5" /> },
+  2: { text: 'INACTIVE', classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400', icon: <XCircle className="h-3.5 w-3.5" /> },
+  3: { text: 'Delete', classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400', icon: <Trash2 className="h-3.5 w-3.5 fill-red-400 text-red-700" /> },
+} as const;
 
-const ROLE_LABEL: Record<number, string> = {
-  1: 'Tester',
-  2: 'User',
-  3: 'Admin',
-};
-
-function getRoleLabel(role: number | string | null | undefined): string {
-  if (role === null || role === undefined || role === '') return 'N/A';
-  const num = typeof role === 'string' ? Number(role) : role;
-  return ROLE_LABEL[num as 1 | 2 | 3] ?? 'N/A';
-}
-
-  //this is for active and inactive badge
-  const statusConfig = {
-    1: { // Active
-      text: 'ACTIVE',
-      classes: 'bg-green-500/20 text-emerald-400 ring-1 ring-emerald-400',
-      icon: <CheckCircle className="h-3.5 w-3.5" />,
-    },
-    2: { // Inactive
-      text: 'INACTIVE',
-      classes: 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-400',
-      icon: <XCircle className="h-3.5 w-3.5" />,
-    },
-    3: { // Deleted
-      text: 'Delete',
-      classes: 'bg-red-500/20 text-red-400 ring-1 ring-red-400',
-      icon: <Trash2 className="h-3.5 w-3.5 fill-red-400 text-red-700" />,
-    },
-  } as const;
-
-  interface TableStatusAction {
-  status: number;
-  label: string;
-  confirmMessage: string;
-  color: string;
-  }
-
+interface TableStatusAction { status: number; label: string; confirmMessage: string; color: string; }
 const statusActions: TableStatusAction[] = [
-  {
-    status: 3,
-    label: statusConfig[3].text,
-    confirmMessage: 'Are you sure you want to mark this order as complete?',
-    color: 'text-red-500 focus:text-red-500 focus:bg-red-500/10',
-  },
+  { status: 3, label: statusConfig[3].text, confirmMessage: 'Are you sure you want to mark this user as deleted?', color: 'text-red-500 focus:text-red-500 focus:bg-red-500/10' },
 ];
 
 type Status = keyof typeof statusConfig;
-
-type UserStatusBadgeProps = {
-  status: number | null;
-};
-
+type UserStatusBadgeProps = { status: number | null; };
 const UserStatusBadge = ({ status }: UserStatusBadgeProps) => {
   const currentStatus = status && statusConfig[status as Status] ? statusConfig[status as Status] : statusConfig[2];
-
-  return (
-    <Badge
-      className={cn(
-        'inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold transition-colors duration-200',
-        currentStatus.classes
-      )}
-    >
-      {currentStatus.icon}
-      <span>{currentStatus.text}</span>
-    </Badge>
-  );
+  return <Badge className={cn('inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold transition-colors duration-200', currentStatus.classes)}> {currentStatus.icon} <span>{currentStatus.text}</span> </Badge>;
 };
 
 export default function SystemUsersTable(): React.ReactElement {
@@ -142,12 +93,11 @@ export default function SystemUsersTable(): React.ReactElement {
   const thead = useTranslations('Sidebar');
   const tdialog = useTranslations('DialogHeader');
   const [pagedUsers, setPagedUsers] = useState<SystemUser[]>([]);
-  const [users, setUsers] = useState<SystemUser[]>([]);
   const [state, setState] = useState<FetchState>('idle');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [status, setStatus] = useState<typeof STATUS_OPTIONS[number]['value']>('all');
-  const [page, setPage] = useState<number>(1); // UI is 1-based index
+  const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -157,31 +107,41 @@ export default function SystemUsersTable(): React.ReactElement {
   const [isLoading, setIsLoading] = useState(false);
   const [tempStatus, setTempStatus] = useState(status);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [confirmationState, setConfirmationState] = useState<{ userId: number; action: TableStatusAction; } | null>(null);
 
-  const [confirmationState, setConfirmationState] = useState<{
-    userId: number;
-    action: TableStatusAction;
-  } | null>(null);
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [filterRole, setFilterRole] = useState('all');
+  const [tempFilterRole, setTempFilterRole] = useState('all');
+
+  useEffect(() => {
+    const fetchAllRoles = async () => {
+      try {
+        const { data } = await axios.get(`${BACKEND_URL}/api/roles`);
+        setAvailableRoles(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch roles", error);
+        toast.error("Could not load roles for filters/forms.");
+      }
+    };
+    fetchAllRoles();
+  }, [BACKEND_URL]);
 
   const fetchUsers = useCallback(async () => {
     setState('loading');
     const params = new URLSearchParams();
-
     params.append('page', (page - 1).toString()); 
     params.append('size', rowsPerPage.toString());
-
-    if (debouncedQuery) {
-        params.append('search', debouncedQuery);
-    }
+    if (debouncedQuery) params.append('search', debouncedQuery);
     if (status !== 'all') {
-        const numericStatus = status === 'active' ? 1 : 2;
-        params.append('status', numericStatus.toString());
+      const numericStatus = status === 'active' ? 1 : 2;
+      params.append('status', numericStatus.toString());
+    }
+    if (filterRole !== 'all') {
+      params.append('roleId', filterRole);
     }
 
     try {
-      const { data } = await axios.get(`${BACKEND_URL}/api/users?${params.toString()}`, {
-        headers: { Accept: 'application/json' },
-      });
+      const { data } = await axios.get(`${BACKEND_URL}/api/users?${params.toString()}`, { headers: { Accept: 'application/json' } });
       setPagedUsers(Array.isArray(data.items) ? data.items : []);
       setTotalPages(data.totalPages);
       setTotalItems(data.totalItems);
@@ -191,306 +151,141 @@ export default function SystemUsersTable(): React.ReactElement {
       setPagedUsers([]);
       setState('error');
     }
-  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status]);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status, filterRole]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { const handler = setTimeout(() => { setDebouncedQuery(query); if (page !== 1) setPage(1); }, 500); return () => clearTimeout(handler); }, [query, page]);
+  useEffect(() => { if (page !== 1) setPage(1); }, [status, rowsPerPage, filterRole]);
+  useEffect(() => { if (!editDialogOpen) { setEditingUser(null); } }, [editDialogOpen]);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedQuery(query);
-      if (page !== 1) setPage(1);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [query]);
-
-  useEffect(() => {
-    if (page !== 1) setPage(1);
-  }, [status, rowsPerPage]);
-
-  useEffect(() => {
-    if (!editDialogOpen) {
-      setEditingUser(null);
-    }
-  }, [editDialogOpen]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = users;
-    if (q) {
-      list = list.filter((u) => {
-        const name = (u.fullName || u.username || '').toLowerCase();
-        const email = (u.email || '').toLowerCase();
-        return name.includes(q) || email.includes(q);
-      });
-    }
-    if (status !== 'all') {
-      const shouldBeActive = status === 'active';
-      list = list.filter((u) => (u.status ?? 2) === (shouldBeActive ? 1 : 2));
-    }
-    return list;
-  }, [users, query, status]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const currentPage = Math.min(page, pageCount);
-  const start = (currentPage - 1) * rowsPerPage;
-  const end = start + rowsPerPage;
-  const pageRows = filtered.slice(start, end);
-
-  useEffect(() => {
-    setPage(1);
-  }, [query, status, rowsPerPage]);
-
-  const fields: FieldConfig[] = [
+  const fields = useMemo((): FieldConfig[] => ([
     { name: 'username', label: 'Username', required: true, placeholder: 'example' },
     { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
     { name: 'password', label: 'Password', type: 'password', required: true, placeholder: '••••••••' },
-    { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS, defaultValue: '1' },
-    { name: 'status', label: 'Status', type: 'select', required: true, options: [
-      { label: 'Active', value: '1' },
-      { label: 'Inactive', value: '2' }
-    ], defaultValue: '1' },
-  ];
+    { name: 'roles', label: 'Role', type: 'select', required: true, options: availableRoles.map(r => ({ label: r.name, value: r.name })), defaultValue: 'USER' },
+    { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: '1' }, { label: 'Inactive', value: '2' }], defaultValue: '1' },
+  ]), [availableRoles]);
 
-  // this is for edit user
-  const editFields: FieldConfig[] = [
-    { name: 'username', label: 'Username', required: true, placeholder: 'example' },
-    { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
-    { name: 'password', label: 'Password', type: 'password', placeholder: '••••••••' },
-    { name: 'role', label: 'Role', type: 'select', required: true, options: ROLE_OPTIONS },
-    { name: 'status', label: 'Status', type: 'select', required: true, options: [
-      { label: 'Active', value: '1' },
-      { label: 'Inactive', value: '2' }
-    ] },
-  ];
+  const editFields = useMemo((): FieldConfig[] => ([
+    { name: 'username', label: 'Username', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'password', label: 'New Password', type: 'password', placeholder: 'Leave blank to keep current' },
+    { name: 'roles', label: 'Role', type: 'select', required: true, options: availableRoles.map(r => ({ label: r.name, value: r.name })) },
+    { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: '1' }, { label: 'Inactive', value: '2' }] },
+  ]), [availableRoles]);
 
   const handleCreate = async (values: Record<string, string>) => {
     const createData = {
-      username: values.username,
-      email: values.email,
-      password: values.password,
-      role: Number(values.role),
+      username: values.username, email: values.email, password: values.password,
+      roles: [values.roles], 
       status: Number(values.status),
     };
-
     try {
-      await axios.post(`${BACKEND_URL}/api/auth/signup`, createData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-      });
+      await axios.post(`${BACKEND_URL}/api/auth/signup`, createData);
       await fetchUsers();
-      toast.success("User Created", {
-        description: `User has been successfully created.`,
-      });
+      toast.success("User Created");
+      setDialogOpen(false);
     } catch (error) {
       console.error('Error creating user:', error);
-      toast.error("User Creation Failed", {
-        description: "Failed to create user. Please try again.",
-      });
-    }
-  };
-
-  const handleEdit = (user: SystemUser) => {
-    setEditingUser(user);
-    setEditDialogOpen(true);
-  };
-
-  const handleConfirmAction = async () => {
-    if (confirmationState) {
-      await updateTableStatus(confirmationState.userId, confirmationState.action);
-      setConfirmationState(null);
-    }
-  };
-
-  const updateTableStatus = async (userId: number, action: TableStatusAction) => {
-    setIsLoading(true);
-    try {
-      await axios.patch(`${BACKEND_URL}/api/users/delete/${userId}`, {
-        status: action.status,
-      });
-      await fetchUsers();
-      toast.success("User Deleted", {
-        description: `User has been successfully deleted.`,
-      });
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || `Failed to update order to ${action.label}`;
-      console.error(`Error updating order status to ${action.label}:`, error);
-      toast.error("User Deleting Failed", {
-        description: "Failed to delete user. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
+      toast.error("User Creation Failed");
     }
   };
 
   const handleUpdate = async (values: Record<string, string>) => {
     if (!editingUser) return;
-    
+    const updateData = {
+      username: values.username, email: values.email,
+      roles: [values.roles], 
+      password: values.password || undefined,
+      status: Number(values.status),
+    };
     try {
-      const updateData = {
-        username: values.username,
-        email: values.email,
-        role: Number(values.role),
-        password: values.password,
-        status: Number(values.status),
-      };
-      
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${editingUser.id}`, updateData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-      });
-      
+      await axios.put(`${BACKEND_URL}/api/users/${editingUser.id}`, updateData);
       await fetchUsers();
       setEditDialogOpen(false);
-      toast.success("User Updated", {
-        description: `User has been successfully updated.`,
-      });
-      setEditingUser(null);
+      toast.success("User Updated");
     } catch (error) {
       console.error('Error updating user:', error);
-      toast.error("User Updated Fail", {
-        description: `Failed to update user. Please try again.`,
-      });
+      toast.error("User Update Failed");
     }
   };
-
-  const handleFilterOpenChange = (open: boolean) => {
-    if (open) {
-      setTempStatus(status);
+  
+  const handleEdit = (user: SystemUser) => { setEditingUser(user); setEditDialogOpen(true); };
+  const handleConfirmAction = async () => { if (confirmationState) { await updateTableStatus(confirmationState.userId, confirmationState.action); setConfirmationState(null); } };
+  const updateTableStatus = async (userId: number, action: TableStatusAction) => {
+    setIsLoading(true);
+    try {
+      await axios.patch(`${BACKEND_URL}/api/users/delete/${userId}`, { status: action.status });
+      await fetchUsers();
+      toast.success("User Deleted");
+    } catch (error: any) {
+      console.error(`Error deleting user:`, error);
+      toast.error("User Deleting Failed");
+    } finally {
+      setIsLoading(false);
     }
-    setFilterOpen(open);
   };
+  const handleFilterOpenChange = (open: boolean) => { if (open) { setTempStatus(status); setTempFilterRole(filterRole); } setFilterOpen(open); };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{thead('system_users')}</h1>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold">{thead('system_users')}</h1>
 
       <div className="flex items-center justify-between gap-3">
         <div className='flex'>
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter by name or email..."
-            className="mr-3 w-60"
-          />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter by name or email..." className="mr-3 w-60" />
           <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
             <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="border-gray-300 hover:bg-gray-50 focus:border-blue-500 focus:ring-blue-500/20 cursor-pointer"
-              >
-                <Filter className="h-4 w-4" />
-                {t('filter')}
-              </Button>
+              <Button variant="outline" className="border-gray-300 hover:bg-gray-50"><Filter className="h-4 w-4" />{t('filter')}</Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
               <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status-filter" className="text-sm font-medium">
-                    Status
-                  </Label>
-                  <Select
-                    value={tempStatus}
-                    onValueChange={(value) => {
-                      if (value === 'all' || value === 'active' || value === 'inactive') {
-                        setTempStatus(value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger 
-                      id="status-filter" 
-                      className="border-gray-300 w-50"
-                    >
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((opt) => (
-                        <SelectItem 
-                          key={opt.value} 
-                          value={opt.value}
-                        >
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="space-y-2"><Label htmlFor="status-filter">Status</Label><Select value={tempStatus} onValueChange={(v) => setTempStatus(v as any)}><SelectTrigger id="status-filter"><SelectValue /></SelectTrigger><SelectContent>{STATUS_OPTIONS.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-2"><Label htmlFor="role-filter">Role</Label><Select value={tempFilterRole} onValueChange={setTempFilterRole}><SelectTrigger id="role-filter"><SelectValue placeholder="All Roles" /></SelectTrigger><SelectContent><SelectItem value="all">All Roles</SelectItem>{availableRoles.map(role => <SelectItem key={role.id} value={String(role.id)}>{role.name}</SelectItem>)}</SelectContent></Select></div>
               </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>{t('cancel')}</Button>
-                <Button onClick={() => {
-                  setStatus(tempStatus);
-                  setFilterOpen(false);
-                }}
-                className='border cursor-pointer h-8'>{t('apply')}</Button>
-              </div>
+              <div className="flex justify-end gap-2 mt-4"><Button variant="ghost" onClick={() => setFilterOpen(false)}>{t('cancel')}</Button><Button onClick={() => { setStatus(tempStatus); setFilterRole(tempFilterRole); setFilterOpen(false); }}>{t('apply')}</Button></div>
             </PopoverContent>
           </Popover>
         </div>
-        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> {t('new')}
-        </Button>
+        <Button onClick={() => setDialogOpen(true)}><BadgePlus /> {t('new')}</Button>
       </div>
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">#</TableHead>
-              <TableHead className="text-base">Name</TableHead>
-              <TableHead className="text-base">Email</TableHead>
-              <TableHead className="text-base">Role</TableHead>
-              <TableHead className="text-base">Status</TableHead>
-              <TableHead className="text-base">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+          <TableHeader><TableRow><TableHead className="w-16">#</TableHead><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
           <TableBody>
-            {state === 'loading' && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center">
-                  Loading users...
-                </TableCell>
-              </TableRow>
-            )}
-            {state === 'error' && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center">
-                  Failed to load users.
-                </TableCell>
-              </TableRow>
-            )}
+            {state === 'loading' && <TableRow><TableCell colSpan={6} className="py-10 text-center">Loading users...</TableCell></TableRow>}
+            {state === 'error' && <TableRow><TableCell colSpan={6} className="py-10 text-center text-red-500">Failed to load users.</TableCell></TableRow>}
+            {state === 'success' && pagedUsers.length === 0 && <TableRow><TableCell colSpan={6} className="py-10 text-center">No results found.</TableCell></TableRow>}
             {state === 'success' && pagedUsers.map((user, idx) => (
               <TableRow key={user.id}>
-                <TableCell className='font-bold text-md'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
+                <TableCell className='font-bold'>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
+                <TableCell>{user.fullName || user.username}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                {/* FIX #2: Map over the array of strings and use the string as the key */}
                 <TableCell>
-                  <span className="text-md">{user.fullName || user.username}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {user.roles.map(roleName => (
+                      <Badge key={roleName} variant="secondary">{roleName}</Badge>
+                    ))}
+                  </div>
                 </TableCell>
-                <TableCell>
-                  <span className="text-md">{user.email}</span>
-                </TableCell>
-                <TableCell>{getRoleLabel(user.role)}</TableCell>
-                <TableCell>
-                  <UserStatusBadge status={user.status} />
-                </TableCell>
+                <TableCell><UserStatusBadge status={user.status} /></TableCell>
+                {/* FIX #3: Added 'key' prop to the DropdownMenuItem inside the map to resolve the warning */}
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer">
-                        <Ellipsis className='h-5 w-5' />
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Ellipsis className="h-5 w-5" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(user)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-blue-500 focus:text-blue-500 focus:bg-blue-500/10"
+                        onClick={() => handleEdit(user)}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
                       {statusActions.map((action) => (
                         <DropdownMenuItem
                           key={action.status}
@@ -508,81 +303,78 @@ export default function SystemUsersTable(): React.ReactElement {
             ))}
           </TableBody>
         </Table>
-        <ConfirmationDialog
-          isOpen={!!confirmationState}
-          onClose={() => setConfirmationState(null)} // Handles Cancel/Esc/Overlay click
-          onConfirm={handleConfirmAction}            // Handles the Confirm click
-          title={`Confirm Action: ${confirmationState?.action.label || ''}`}
-          description={confirmationState?.action.confirmMessage || ''}
-        />
       </div>
 
+      {/* FIX #4: Correctly formatted pagination controls */}
       <div className="flex items-center justify-between text-sm">
-        <div className='font-bold'>
+        <div className="font-bold text-muted-foreground">
           {totalItems === 0
             ? '0 items found.'
             : `Showing ${((page - 1) * rowsPerPage) + 1} to ${Math.min(page * rowsPerPage, totalItems)} of ${totalItems} items.`}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className='font-bold'>Rows per page</span>
+            <span className="font-bold">Rows per page</span>
             <Select
               value={String(rowsPerPage)}
-              onValueChange={(value) => {
-                setRowsPerPage(Number(value));
-              }}
+              onValueChange={(val) => setRowsPerPage(Number(val))}
             >
-              <SelectTrigger className="!h-7 w-[70px]">
+              <SelectTrigger className="w-[70px] !h-7">
                 <SelectValue placeholder={rowsPerPage} />
               </SelectTrigger>
-              <SelectContent side="top">
+              <SelectContent>
                 {[5, 10, 20, 50].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            <span className='font-bold'>
+            <span className="font-bold">
               Page {page} of {totalPages}
             </span>
             <div className="ml-2 inline-flex rounded-md space-x-2">
-                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeft className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || totalPages === 0}><ChevronRight className='w-4 h-4' /></Button>
-                <Button variant="outline" size="icon" className='h-7' onClick={() => setPage(totalPages)} disabled={page === totalPages || totalPages === 0}><ChevronsRight className='w-4 h-4' /></Button>
+              <Button variant="outline" size="icon" className="h-7" onClick={() => setPage(1)} disabled={page === 1}>
+                <ChevronsLeft className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-7" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline" size="icon" className="h-7"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages || totalPages === 0}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline" size="icon" className="h-7"
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages || totalPages === 0}
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <FormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        title={tdialog('create_user')}
-        fields={fields}
-        submitLabel="Create"
-        cancelLabel="Cancel"
-        onSubmit={handleCreate}
-      />
-
-      <FormDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        title={tdialog('update_user')}
-        fields={editFields}
-        submitLabel="Update"
-        cancelLabel="Cancel"
+      <FormDialog open={dialogOpen} onOpenChange={setDialogOpen} title={tdialog('create_user')} fields={fields} onSubmit={handleCreate} />
+      <FormDialog 
+        open={editDialogOpen} 
+        onOpenChange={setEditDialogOpen} 
+        title={tdialog('update_user')} 
+        fields={editFields} 
         initialValues={editingUser ? {
           username: editingUser.username,
           email: editingUser.email,
-          role: editingUser.role != null ? String(editingUser.role) : '',
+          roles: editingUser.roles[0] || '', 
           status: editingUser.status != null ? String(editingUser.status) : '1',
         } : undefined}
         onSubmit={handleUpdate}
       />
+      <ConfirmationDialog isOpen={!!confirmationState} onClose={() => setConfirmationState(null)} onConfirm={handleConfirmAction} title={`Confirm Action: ${confirmationState?.action.label || ''}`} description={confirmationState?.action.confirmMessage || ''} />
+      <Toaster richColors />
     </div>
   );
 }
