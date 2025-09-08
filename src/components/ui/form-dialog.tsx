@@ -22,17 +22,21 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Textarea } from "./textarea";
+import { MultiSelect } from '@/components/ui/multi-select';
 
+// FIX #1: Add 'multiselect' to the type, but keep values flexible.
 export type FieldConfig = {
   name: string;
   label: string;
-  type?: "text" | "email" | "password" | "select" | "file" | "textarea";
+  type?: "text" | "email" | "password" | "select" | "file" | "textarea" | "multiselect";
   placeholder?: string;
   required?: boolean;
-  defaultValue?: string;
+  defaultValue?: any; // Use 'any' for flexibility with default values (e.g., [] for multiselect)
   options?: Array<{ label: string; value: string }>;
 };
 
+// FIX #2: Use a more flexible type for values to avoid breaking existing components.
+// The component itself will ensure the correct types are used internally.
 export type FormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,9 +46,9 @@ export type FormDialogProps = {
   submitLabel?: string;
   cancelLabel?: string;
   className?: string;
-  initialValues?: Record<string, string>;
+  initialValues?: Record<string, any>;
   isLoading?: boolean;
-  onSubmit: (values: Record<string, string>) => Promise<void> | void;
+  onSubmit: (values: Record<string, any>) => Promise<void> | void;
 };
 
 export function FormDialog({
@@ -61,35 +65,36 @@ export function FormDialog({
   const t = useTranslations('Button');
   const submitLabel = t("create");
   const cancelLabel = t("cancel");
-  const defaultValues = useMemo(() => {
-    return fields.reduce<Record<string, string>>((acc, f) => {
-      acc[f.name] = f.defaultValue ?? "";
-      return acc;
-    }, {});
-  }, [fields]);
 
-  const initialFormValues = useMemo(() => {
-    return { ...defaultValues, ...initialValues };
-  }, [defaultValues, initialValues]);
-
-  const [values, setValues] = useState<Record<string, string>>(initialFormValues);
+  const [values, setValues] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>("");
 
+  // FIX #3: More robust state initialization.
+  // This effect runs ONLY when the dialog opens, correctly setting the initial state.
   useEffect(() => {
-    setValues(initialFormValues);
-  }, [initialFormValues]);
+    if (open) {
+      const defaultValues = fields.reduce<Record<string, any>>((acc, field) => {
+        // For multiselect, default to an empty array if no other default is provided.
+        if (field.type === 'multiselect') {
+          acc[field.name] = field.defaultValue ?? [];
+        } else {
+          acc[field.name] = field.defaultValue ?? "";
+        }
+        return acc;
+      }, {});
+      setValues({ ...defaultValues, ...initialValues });
+    }
+  }, [open, fields, initialValues]);
 
-  const handleChange = (name: string, value: string) => {
+  const handleChange = (name: string, value: any) => {
     setValues((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
-      // reset when closing
-      setValues(initialFormValues);
       setError("");
-      setSubmitting(false);
+      // No need to reset values here; the useEffect above handles it on re-open.
     }
     onOpenChange(nextOpen);
   };
@@ -100,9 +105,9 @@ export function FormDialog({
     setSubmitting(true);
     try {
       await onSubmit(values);
-      handleOpenChange(false);
+      handleOpenChange(false); // Close dialog on successful submission
     } catch (err: unknown) {
-      console.log(err);
+      console.error(err);
       setError("Failed to submit. Please try again.");
     } finally {
       setSubmitting(false);
@@ -126,68 +131,79 @@ export function FormDialog({
               <label htmlFor={field.name} className="text-sm font-medium">
                 {field.label}
               </label>
-              {field.type === "select" ? (
-                <Select
-                  name={field.name}
-                  required={field.required}
-                  value={values[field.name] ?? ""}
-                  onValueChange={(value) => handleChange(field.name, value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={`Select ${field.label}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {field.options?.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : field.type === "file" ? (
-                <div className="space-y-2">
-                  <input
-                    id={field.name}
-                    name={field.name}
-                    type="file"
-                    accept="image/*"
-                    required={field.required}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        // Create a temporary URL for the file
-                        const fileUrl = URL.createObjectURL(file);
-                        handleChange(field.name, fileUrl);
-                      }
-                    }}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                  {values[field.name] && (
-                    <div className="mt-2">
+              
+              {(() => {
+                switch (field.type) {
+                  case "select":
+                    return (
+                      <Select
+                        name={field.name}
+                        required={field.required}
+                        value={String(values[field.name] ?? "")}
+                        onValueChange={(value) => handleChange(field.name, value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.options?.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
 
-                    </div>
-                  )}
-                </div>
-              ) : field.type === "textarea" ? (
-                <Textarea
-                  id={field.name}
-                  name={field.name}
-                  placeholder={field.placeholder}
-                  required={field.required}
-                  value={values[field.name] ?? ""}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              ) : (
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type={field.type ?? "text"}
-                  placeholder={field.placeholder}
-                  required={field.required}
-                  value={values[field.name] ?? ""}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                />
-              )}
+                  // FIX #4: Correctly handle value for MultiSelect
+                  case "multiselect":
+                    return (
+                      <MultiSelect
+                        options={field.options || []}
+                        // Ensure the value is ALWAYS an array to prevent crashes.
+                        value={Array.isArray(values[field.name]) ? values[field.name] : []}
+                        onChange={(value) => handleChange(field.name, value)}
+                        placeholder={field.placeholder}
+                      />
+                    );
+
+                  case "textarea":
+                    return (
+                      <Textarea
+                        id={field.name}
+                        name={field.name}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        value={String(values[field.name] ?? "")}
+                        onChange={(e) => handleChange(field.name, e.target.value)}
+                      />
+                    );
+                  
+                  // Handle file and default text inputs
+                  case "file":
+                    // NOTE: This implementation doesn't handle file objects for submission,
+                    // only their local URL for preview. Submission logic would need adjustment.
+                    return ( <Input id={field.name} name={field.name} type="file" required={field.required} 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          handleChange(field.name, file); // Store the file object itself
+                        }}
+                    /> );
+                  
+                  default:
+                    return (
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type={field.type ?? "text"}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                        value={String(values[field.name] ?? "")}
+                        onChange={(e) => handleChange(field.name, e.target.value)}
+                      />
+                    );
+                }
+              })()}
             </div>
           ))}
 
@@ -207,15 +223,10 @@ export function FormDialog({
             >
               {cancelLabel}
             </Button>
-            <Button type="submit" className="cursor-pointer" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Please wait
-                </>
-              ) : (
-                submitLabel
-              )}
+            <Button type="submit" className="cursor-pointer" disabled={submitting || isLoading}>
+              {(submitting || isLoading) ? (
+                <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait </>
+              ) : ( submitLabel )}
             </Button>
           </DialogFooter>
         </form>

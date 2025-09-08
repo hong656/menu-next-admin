@@ -111,13 +111,13 @@ export default function SystemUsersTable(): React.ReactElement {
   const [confirmationState, setConfirmationState] = useState<{ userId: number; action: TableStatusAction; } | null>(null);
 
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
-  const [filterRole, setFilterRole] = useState('all');
-  const [tempFilterRole, setTempFilterRole] = useState('all');
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const triggerRefetch = () => setRefetchTrigger(prev => prev + 1);
 
   useEffect(() => {
     const fetchAllRoles = async () => {
       try {
-        const { data } = await axios.get(`${BACKEND_URL}/api/roles`);
+        const { data } = await axios.get(`${BACKEND_URL}/api/roles/all `);
         setAvailableRoles(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Failed to fetch roles", error);
@@ -137,9 +137,6 @@ export default function SystemUsersTable(): React.ReactElement {
       const numericStatus = status === 'active' ? 1 : 2;
       params.append('status', numericStatus.toString());
     }
-    if (filterRole !== 'all') {
-      params.append('roleId', filterRole);
-    }
 
     try {
       const { data } = await axios.get(`${BACKEND_URL}/api/users?${params.toString()}`, { headers: { Accept: 'application/json' } });
@@ -152,18 +149,18 @@ export default function SystemUsersTable(): React.ReactElement {
       setPagedUsers([]);
       setState('error');
     }
-  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status, filterRole]);
+  }, [BACKEND_URL, page, rowsPerPage, debouncedQuery, status]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { fetchUsers(); }, [fetchUsers, refetchTrigger]);
   useEffect(() => { const handler = setTimeout(() => { setDebouncedQuery(query); if (page !== 1) setPage(1); }, 500); return () => clearTimeout(handler); }, [query, page]);
-  useEffect(() => { if (page !== 1) setPage(1); }, [status, rowsPerPage, filterRole]);
+  useEffect(() => { if (page !== 1) setPage(1); }, [status, rowsPerPage]);
   useEffect(() => { if (!editDialogOpen) { setEditingUser(null); } }, [editDialogOpen]);
 
   const fields = useMemo((): FieldConfig[] => ([
     { name: 'username', label: 'Username', required: true, placeholder: 'example' },
     { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'example@example.com' },
     { name: 'password', label: 'Password', type: 'password', required: true, placeholder: '••••••••' },
-    { name: 'roles', label: 'Role', type: 'select', required: true, options: availableRoles.map(r => ({ label: r.name, value: r.name })), defaultValue: 'USER' },
+    { name: 'roles', label: 'Roles', type: 'multiselect', required: true, options: availableRoles.map(r => ({ label: r.name, value: r.name })) },
     { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: '1' }, { label: 'Inactive', value: '2' }], defaultValue: '1' },
   ]), [availableRoles]);
 
@@ -171,43 +168,51 @@ export default function SystemUsersTable(): React.ReactElement {
     { name: 'username', label: 'Username', required: true },
     { name: 'email', label: 'Email', type: 'email', required: true },
     { name: 'password', label: 'New Password', type: 'password', placeholder: 'Leave blank to keep current' },
-    { name: 'roles', label: 'Role', type: 'select', required: true, options: availableRoles.map(r => ({ label: r.name, value: r.name })) },
+    { name: 'roles', label: 'Roles', type: 'multiselect', required: true, options: availableRoles.map(r => ({ label: r.name, value: r.name })) },
     { name: 'status', label: 'Status', type: 'select', required: true, options: [{ label: 'Active', value: '1' }, { label: 'Inactive', value: '2' }] },
   ]), [availableRoles]);
 
-  const handleCreate = async (values: Record<string, string>) => {
+  const handleCreate = async (values: Record<string, any>) => {
+    const roleIds = (values.roles as string[]).map(roleName => {
+      const role = availableRoles.find(r => r.name === roleName);
+      return role ? role.id : null;
+    }).filter((id): id is number => id !== null);
+
     const createData = {
       username: values.username, email: values.email, password: values.password,
-      roles: [values.roles], 
-      status: Number(values.status),
+      roleIds, status: Number(values.status),
     };
     try {
       await axios.post(`${BACKEND_URL}/api/auth/signup`, createData);
-      await fetchUsers();
       toast.success("User Created");
-      setDialogOpen(false);
+      triggerRefetch(); // <-- CORRECT: This triggers the fetch
     } catch (error) {
       console.error('Error creating user:', error);
       toast.error("User Creation Failed");
+      throw error; // IMPORTANT: This keeps the dialog open on failure
     }
   };
 
-  const handleUpdate = async (values: Record<string, string>) => {
+  const handleUpdate = async (values: Record<string, any>) => {
     if (!editingUser) return;
+    const roleIds = (values.roles as string[]).map(roleName => {
+      const role = availableRoles.find(r => r.name === roleName);
+      return role ? role.id : null;
+    }).filter((id): id is number => id !== null);
+
     const updateData = {
       username: values.username, email: values.email,
-      roles: [values.roles], 
       password: values.password || undefined,
-      status: Number(values.status),
+      roleIds, status: Number(values.status),
     };
     try {
       await axios.put(`${BACKEND_URL}/api/users/${editingUser.id}`, updateData);
-      await fetchUsers();
-      setEditDialogOpen(false);
       toast.success("User Updated");
+      triggerRefetch(); // <-- CORRECT: This triggers the fetch
     } catch (error) {
       console.error('Error updating user:', error);
       toast.error("User Update Failed");
+      throw error; // IMPORTANT: This keeps the dialog open on failure
     }
   };
   
@@ -217,8 +222,8 @@ export default function SystemUsersTable(): React.ReactElement {
     setIsLoading(true);
     try {
       await axios.patch(`${BACKEND_URL}/api/users/delete/${userId}`, { status: action.status });
-      await fetchUsers();
       toast.success("User Deleted");
+      triggerRefetch(); // <-- CORRECT: This triggers the fetch
     } catch (error: any) {
       console.error(`Error deleting user:`, error);
       toast.error("User Deleting Failed");
@@ -226,7 +231,7 @@ export default function SystemUsersTable(): React.ReactElement {
       setIsLoading(false);
     }
   };
-  const handleFilterOpenChange = (open: boolean) => { if (open) { setTempStatus(status); setTempFilterRole(filterRole); } setFilterOpen(open); };
+  const handleFilterOpenChange = (open: boolean) => { if (open) { setTempStatus(status); } setFilterOpen(open); };
 
   return (
     <div className="space-y-4">
@@ -241,10 +246,35 @@ export default function SystemUsersTable(): React.ReactElement {
             </PopoverTrigger>
             <PopoverContent className="w-auto p-4" align="start">
               <div className="grid gap-4">
-                <div className="space-y-2"><Label htmlFor="status-filter">Status</Label><Select value={tempStatus} onValueChange={(v) => setTempStatus(v as any)}><SelectTrigger id="status-filter"><SelectValue /></SelectTrigger><SelectContent>{STATUS_OPTIONS.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent></Select></div>
-                <div className="space-y-2"><Label htmlFor="role-filter">Role</Label><Select value={tempFilterRole} onValueChange={setTempFilterRole}><SelectTrigger id="role-filter"><SelectValue placeholder="All Roles" /></SelectTrigger><SelectContent><SelectItem value="all">All Roles</SelectItem>{availableRoles.map(role => <SelectItem key={role.id} value={String(role.id)}>{role.name}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter" className="text-sm font-medium">
+                    Status
+                  </Label>
+                  <Select
+                    value={tempStatus}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === 'active' || value === 'inactive') {
+                        setTempStatus(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="status-filter" className="border-gray-300 w-50">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex justify-end gap-2 mt-4"><Button variant="ghost" onClick={() => setFilterOpen(false)}>{t('cancel')}</Button><Button onClick={() => { setStatus(tempStatus); setFilterRole(tempFilterRole); setFilterOpen(false); }}>{t('apply')}</Button></div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setFilterOpen(false)} className='border cursor-pointer h-8'>{t('cancel')}</Button>
+                <Button onClick={() => { setStatus(tempStatus); setFilterOpen(false); }} className='border cursor-pointer h-8'>{t('apply')}</Button>
+              </div>
             </PopoverContent>
           </Popover>
         </div>
@@ -377,7 +407,7 @@ export default function SystemUsersTable(): React.ReactElement {
         initialValues={editingUser ? {
           username: editingUser.username,
           email: editingUser.email,
-          roles: editingUser.roles[0] || '', 
+          roles: editingUser.roles || [],
           status: editingUser.status != null ? String(editingUser.status) : '1',
         } : undefined}
         onSubmit={handleUpdate}
