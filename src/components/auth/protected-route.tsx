@@ -10,13 +10,23 @@ interface ProtectedRouteProps {
   requiredPermissions: string[];
 }
 
+function AuthLoading() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center">
+      <p>Loading...</p>
+    </div>
+  );
+}
+
 export default function ProtectedRoute({ children, requiredPermissions }: ProtectedRouteProps) {
   const { isAuthenticated, permissions, loading } = useAuth();
   const router = useRouter();
 
+  const hasRequiredPermissions = requiredPermissions.every(permission => permissions.has(permission));
+
   useEffect(() => {
     if (loading) {
-      return; // Wait until authentication status is determined
+      return;
     }
 
     if (!isAuthenticated) {
@@ -24,21 +34,15 @@ export default function ProtectedRoute({ children, requiredPermissions }: Protec
       return;
     }
 
-    const hasPermission = requiredPermissions.every(permission => permissions.includes(permission));
-
-    if (!hasPermission) {
+    if (!hasRequiredPermissions) {
       toast.error('Access Denied', {
         description: "You don't have permission to access this page.",
       });
       router.push('/dashboard');
     }
-  }, [isAuthenticated, permissions, loading, requiredPermissions, router]);
-
-  const hasRequiredPermissions = requiredPermissions.every(p => permissions.includes(p));
-
+  }, [isAuthenticated, hasRequiredPermissions, loading, router]);
   if (loading || !isAuthenticated || !hasRequiredPermissions) {
-    // Render nothing or a loading spinner while checking permissions
-    return null;
+    return <AuthLoading />;
   }
 
   return <>{children}</>;

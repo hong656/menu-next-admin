@@ -14,8 +14,10 @@
 
         "Authentication": "Authentication",
         "system_users": "System Users",
+
         "role": "Roles",
         "role_permission": "Role Permissions",
+        "assign_role": "Assign Permission To Role",
 
         "Interface Settings": "Interface Settings",
         "banner": "Banners",

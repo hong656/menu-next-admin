@@ -42,6 +42,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import {useTranslations} from 'next-intl';
+import { Can } from '@/components/auth/can';
 
 // --- UPDATED TYPES ---
 type Role = {
@@ -247,7 +248,11 @@ export default function SystemUsersTable(): React.ReactElement {
             </PopoverContent>
           </Popover>
         </div>
-        <Button onClick={() => setDialogOpen(true)}><BadgePlus /> {t('new')}</Button>
+        <Can requiredPermissions={['user:create']}>
+          <Button onClick={() => setDialogOpen(true)}>
+            <BadgePlus /> {t('new')}
+          </Button>
+        </Can>
       </div>
 
       <div className="rounded-md border">
@@ -280,22 +285,26 @@ export default function SystemUsersTable(): React.ReactElement {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-blue-500 focus:text-blue-500 focus:bg-blue-500/10"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      {statusActions.map((action) => (
+                      <Can requiredPermissions={['user:update']}>
                         <DropdownMenuItem
-                          key={action.status}
-                          className={action.color}
-                          onClick={() => setConfirmationState({ userId: user.id, action })}
-                          disabled={isLoading}
+                          className="text-blue-500 focus:text-blue-500 focus:bg-blue-500/10"
+                          onClick={() => handleEdit(user)}
                         >
-                          <Trash className="mr-2 h-4 w-4" /> {action.label}
+                          <Pencil className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
-                      ))}
+                      </Can>
+                      <Can requiredPermissions={['user:delete']}>
+                        {statusActions.map((action) => (
+                          <DropdownMenuItem
+                            key={action.status}
+                            className={action.color}
+                            onClick={() => setConfirmationState({ userId: user.id, action })}
+                            disabled={isLoading}
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> {action.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </Can>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

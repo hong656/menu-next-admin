@@ -42,6 +42,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import {useTranslations} from 'next-intl';
+import { Can } from '@/components/auth/can';
 
 type TableEntry = {
   id: number;
@@ -397,9 +398,11 @@ export default function TablesTable(): React.ReactElement {
             </PopoverContent>
           </Popover>
         </div>
-        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> {t('new')}
-        </Button>
+        <Can requiredPermissions={['table:create']}>
+          <Button onClick={() => setDialogOpen(true)}>
+            <BadgePlus /> {t('new')}
+          </Button>
+        </Can>
       </div>
 
       <div className="rounded-md border">
@@ -450,17 +453,21 @@ export default function TablesTable(): React.ReactElement {
                       <Link href={`/tables/${table.id}`}>
                         <DropdownMenuItem className='text-green-500 focus:text-green-500 focus:bg-green-500/10'><QrCode className="mr-2 h-4 w-4" />Get Qr Code</DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(table)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                      {statusActions.map((action) => (
-                        <DropdownMenuItem
-                          key={action.status}
-                          className={action.color}
-                          onClick={() => setConfirmationState({ tableId: table.id, action })}
-                          disabled={isLoading}
-                        >
-                          <Trash className="mr-2 h-4 w-4" /> {action.label}
-                        </DropdownMenuItem>
-                      ))}
+                      <Can requiredPermissions={['table:update']}>
+                        <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(table)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                      </Can>
+                      <Can requiredPermissions={['table:delete']}>
+                        {statusActions.map((action) => (
+                          <DropdownMenuItem
+                            key={action.status}
+                            className={action.color}
+                            onClick={() => setConfirmationState({ tableId: table.id, action })}
+                            disabled={isLoading}
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> {action.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </Can>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

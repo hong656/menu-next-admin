@@ -43,6 +43,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import {useTranslations} from 'next-intl';
+import { Can } from '@/components/auth/can';
 
 type Banner = {
   id: number;
@@ -369,9 +370,11 @@ export default function BannerTable(): React.ReactElement {
             </PopoverContent>
           </Popover>
         </div>
-        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> {t('new')}
-        </Button>
+        <Can requiredPermissions={['banner:create']}>
+          <Button onClick={() => setDialogOpen(true)}>
+            <BadgePlus /> {t('new')}
+          </Button>
+        </Can>
       </div>
 
       <div className="rounded-md border">
@@ -435,12 +438,18 @@ export default function BannerTable(): React.ReactElement {
                         <Button variant="ghost" className="h-8 w-8 p-0 cursor-pointer"><Ellipsis className='h-5 w-5' /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(banner)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                        {statusActions.map((action) => (
+                        <Can requiredPermissions={['banner:update']}>
+                          <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(banner)}>
+                            <Pencil className="mr-2 h-4 w-4" />Edit
+                          </DropdownMenuItem>
+                        </Can>
+                        <Can requiredPermissions={['banner:delete']}>
+                          {statusActions.map((action) => (
                             <DropdownMenuItem key={action.status} className={action.color} onClick={() => setConfirmationState({ bannerId: banner.id, action })} disabled={isLoading || banner.status === action.status}>
                               <Trash className="mr-2 h-4 w-4" />  {action.label}
                             </DropdownMenuItem>
-                        ))}
+                          ))}
+                        </Can>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: { username: string; email: string; role?: string } | null;
-  permissions: string[];
+  permissions: Set<string>;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
@@ -45,7 +45,7 @@ function decodeJwtPayload<T = unknown>(token: string): T | null {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ username: string; email: string; role?: string } | null>(null);
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const logoutTimerRef = useRef<number | null>(null);
 
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
     setIsAuthenticated(false);
     setUser(null);
-    setPermissions([]);
+    setPermissions(new Set());
   }, [clearLogoutTimer]);
 
   const scheduleAutoLogout = useCallback((token: string) => {
@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const usernameFromToken = payload?.username || payload?.sub || 'user';
       const emailFromToken = payload?.email || '';
       setUser((prev) => prev ?? { username: String(usernameFromToken), email: String(emailFromToken) });
-      setPermissions(payload?.permissions || []);
+      setPermissions(new Set(payload?.permissions || []));
       scheduleAutoLogout(token);
     }
     setLoading(false);
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email: response.data.email,
           role: 'user'
         });
-        setPermissions(payload?.permissions || []);
+        setPermissions(new Set(payload?.permissions || []));
         scheduleAutoLogout(token);
         toast.success('Login Successful');
         return true;

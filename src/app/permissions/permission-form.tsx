@@ -26,6 +26,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Can } from '@/components/auth/can';
+import {useTranslations} from 'next-intl';
 
 // --- DATA TYPES (No changes here) ---
 type PermissionDetail = {
@@ -57,6 +59,7 @@ type Role = {
 export default function AssignPermissionsTable() {
   const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+  const thead = useTranslations('Sidebar');
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissionGroups, setPermissionGroups] = useState<PermissionGroup[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
@@ -172,7 +175,7 @@ export default function AssignPermissionsTable() {
 
   return (
     <div className="p-6 md:p-8 space-y-6">
-        <h1 className="text-3xl font-bold">Assign Permission To Role</h1>
+        <h1 className="text-3xl font-bold">{thead('assign_role')}</h1>
         <Card>
             <CardHeader className='p-4 border-b'>
                 <div className="flex flex-wrap items-center gap-4">
@@ -199,13 +202,15 @@ export default function AssignPermissionsTable() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <Button onClick={handleSave} disabled={isSaving || !selectedRoleId} className='ml-auto h-10'>
-                        {isSaving ? (
-                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
-                        ) : (
-                            <><Save className="mr-2 h-4 w-4" /> Save</>
+                    <Can requiredPermissions={['permission:update']}>
+                      <Button onClick={handleSave} disabled={isSaving || !selectedRoleId} className='ml-auto h-10'>
+                          {isSaving ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                          ) : (
+                              <><Save className="mr-2 h-4 w-4" /> Save</>
                         )}
-                    </Button>
+                      </Button>
+                    </Can>
                 </div>
             </CardHeader>
             <CardContent className='p-6'>

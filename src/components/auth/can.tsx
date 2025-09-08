@@ -11,7 +11,7 @@ interface CanProps {
 export function Can({ children, requiredPermissions }: CanProps) {
   const { permissions } = useAuth();
 
-  const hasPermission = requiredPermissions.every(permission => permissions.includes(permission));
+  const hasPermission = requiredPermissions.every(permission => permissions.has(permission));
 
   if (!hasPermission) {
     return null;

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import Image from 'next/image';
+import { Can } from '@/components/auth/can';
 
 // ... (interfaces and constants remain the same)
 interface WebSetting {
@@ -267,9 +268,11 @@ export default function GeneralSettings() {
 
             </CardContent>
             <CardFooter className="flex justify-end border-t border-gray-700 pt-6">
-              <Button onClick={handleSaveChanges} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
+              <Can requiredPermissions={['general-setting:create']}>
+                <Button onClick={handleSaveChanges} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </Can>
             </CardFooter>
           </Card>
 

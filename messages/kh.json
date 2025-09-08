@@ -14,8 +14,10 @@
 
         "Authentication": "ការផ្ទៀងផ្ទាត់",
         "system_users": "អ្នកប្រើប្រាស់ប្រព័ន្ធ",
+
         "role": "តួនាទី",
         "role_permission": "តួនាទី និងសិទ្ធិ",
+        "assign_role": "ផ្ដល់សិទ្ធិទៅតួនាទី",
 
         "Interface Settings": "ការកំណត់អន្តរកម្ម",
         "banner": "ផ្ទាំង",

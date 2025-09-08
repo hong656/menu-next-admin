@@ -1,5 +1,5 @@
 import ProtectedRoute from '@/components/auth/protected-route';
-import AssignPermissionsTable from './role-permission-table';
+import AssignPermissionsTable from './permission-form';
 
 export default function RolesPage() {
   return (

@@ -41,6 +41,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Label } from "@/components/ui/label"
 import {useTranslations} from 'next-intl';
+import { Can } from '@/components/auth/can';
 
 // 1. Updated Type to match the new API response for a Role
 type Role = {
@@ -331,9 +332,11 @@ export default function RolesTable(): React.ReactElement {
             </PopoverContent>
           </Popover>
         </div>
-        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> {t('new')}
-        </Button>
+        <Can requiredPermissions={['role:create']}>
+          <Button onClick={() => setDialogOpen(true)}>
+            <BadgePlus /> {t('new')}
+          </Button>
+        </Can>
       </div>
 
       <div className="rounded-md border">
@@ -368,19 +371,23 @@ export default function RolesTable(): React.ReactElement {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(role)}>
-                        <Pencil className="mr-2 h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      {statusActions.map((action) => (
-                        <DropdownMenuItem
-                          key={action.status}
-                          className={action.color}
-                          onClick={() => setConfirmationState({ roleId: role.id, action })}
-                          disabled={isLoading}
-                        >
-                          <Trash className="mr-2 h-4 w-4" /> {action.label}
+                      <Can requiredPermissions={['role:update']}>
+                        <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(role)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
-                      ))}
+                      </Can>                      
+                      <Can requiredPermissions={['role:delete']}>
+                        {statusActions.map((action) => (
+                          <DropdownMenuItem
+                            key={action.status}
+                            className={action.color}
+                            onClick={() => setConfirmationState({ roleId: role.id, action })}
+                            disabled={isLoading}
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> {action.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </Can>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

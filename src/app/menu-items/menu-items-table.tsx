@@ -7,7 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { FileFormDialog, FieldConfig } from '@/components/ui/file-form-dialog';
 import {
   ChevronLeft,
   ChevronsLeft,
@@ -25,7 +24,7 @@ import {
   Trash,
 } from 'lucide-react';
 import { toast } from "sonner";
-import { Toaster } from "@/components/ui/sonner";
+import { Can } from '@/components/auth/can';
 
 import {
   DropdownMenu,
@@ -466,9 +465,11 @@ export default function MenuItemTable(): React.ReactElement {
             </PopoverContent>
           </Popover>
         </div>
-        <Button variant="outline" className="cursor-pointer hover:bg-gray-700 hover:text-white border-black bg-gray-900 text-white" onClick={() => setDialogOpen(true)}>
-          <BadgePlus /> {t('new')}
-        </Button>
+        <Can requiredPermissions={['menu:create']}>
+          <Button onClick={() => setDialogOpen(true)}>
+            <BadgePlus /> {t('new')}
+          </Button>
+        </Can>
       </div>
 
       <div className="rounded-md border">
@@ -565,22 +566,28 @@ export default function MenuItemTable(): React.ReactElement {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => { setItemForDetail(item); setDetailDialogOpen(true); }}>
-                          <Eye className="mr-2 h-4 w-4" /> View Detail
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(item)}>
-                          <Pencil className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        {statusActions.map((action) => (
-                          <DropdownMenuItem
-                              key={action.status}
-                              className={action.color}
-                              onClick={() => setConfirmationState({ itemId: item.id, action })}
-                              disabled={isLoading || item.status === action.status}
-                          >
-                            <Trash className="mr-2 h-4 w-4" />  {action.label}
+                        <Can requiredPermissions={['menu:read']}>
+                          <DropdownMenuItem onSelect={() => { setItemForDetail(item); setDetailDialogOpen(true); }}>
+                            <Eye className="mr-2 h-4 w-4" /> View Detail
+                          </DropdownMenuItem>    
+                        </Can>
+                        <Can requiredPermissions={['menu:update']}>
+                          <DropdownMenuItem className='text-blue-500 focus:text-blue-500 focus:bg-blue-500/10' onClick={() => handleEdit(item)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
-                        ))}
+                        </Can>
+                        <Can requiredPermissions={['menu:delete']}>
+                          {statusActions.map((action) => (
+                            <DropdownMenuItem
+                                key={action.status}
+                                className={action.color}
+                                onClick={() => setConfirmationState({ itemId: item.id, action })}
+                                disabled={isLoading || item.status === action.status}
+                            >
+                              <Trash className="mr-2 h-4 w-4" />  {action.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </Can>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
