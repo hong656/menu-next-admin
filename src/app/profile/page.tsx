@@ -86,7 +86,7 @@ export default function ProfilePage() {
   const statusInfo = getStatusInfo(profile.status);
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={['read:profile']}>
       <div className="container mx-auto p-4 sm:p-6 md:p-8">
         <Card className="max-w-3xl mx-auto">
           <CardHeader>

@@ -3,7 +3,7 @@ import MenuItemTable from './menu-items-table';
 
 export default function MenuItems() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={['menu:read']}>
       <div className="space-y-6">
         <MenuItemTable />
       </div>

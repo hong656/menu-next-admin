@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: { username: string; email: string; role?: string } | null;
+  permissions: string[];
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
@@ -44,6 +45,7 @@ function decodeJwtPayload<T = unknown>(token: string): T | null {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ username: string; email: string; role?: string } | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const logoutTimerRef = useRef<number | null>(null);
 
@@ -60,6 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
     setIsAuthenticated(false);
     setUser(null);
+    setPermissions([]);
   }, [clearLogoutTimer]);
 
   const scheduleAutoLogout = useCallback((token: string) => {
@@ -86,10 +89,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setIsAuthenticated(true);
-      const payload = decodeJwtPayload<{ sub?: string; username?: string; email?: string }>(token);
+      const payload = decodeJwtPayload<{ sub?: string; username?: string; email?: string; permissions?: string[] }>(token);
+      console.log("Decoded JWT from localStorage:", payload);
       const usernameFromToken = payload?.username || payload?.sub || 'user';
       const emailFromToken = payload?.email || '';
       setUser((prev) => prev ?? { username: String(usernameFromToken), email: String(emailFromToken) });
+      setPermissions(payload?.permissions || []);
       scheduleAutoLogout(token);
     }
     setLoading(false);
@@ -111,15 +116,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (response.data.token) {
-        localStorage.setItem('authToken', response.data.token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        const token = response.data.token;
+        localStorage.setItem('authToken', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setIsAuthenticated(true);
+        const payload = decodeJwtPayload<{ sub?: string; username?: string; email?: string; permissions?: string[] }>(token);
+        console.log("Decoded JWT from login:", payload);
         setUser({
           username: response.data.username,
           email: response.data.email,
           role: 'user'
         });
-        scheduleAutoLogout(response.data.token);
+        setPermissions(payload?.permissions || []);
+        scheduleAutoLogout(token);
         toast.success('Login Successful');
         return true;
       }
@@ -141,6 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value = {
     isAuthenticated,
     user,
+    permissions,
     login,
     logout,
     loading

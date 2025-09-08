@@ -164,7 +164,7 @@ export default function GeneralSettings() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={['general-setting:read']}>
       <div className="p-4 sm:p-8">
         <div className="mx-auto max-w-2xl space-y-8">
           

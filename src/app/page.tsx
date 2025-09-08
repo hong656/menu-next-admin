@@ -2,7 +2,7 @@ import ProtectedRoute from '@/components/auth/protected-route';
 
 export default function Home() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={[]}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Welcome to Admin Dashboard</h1>

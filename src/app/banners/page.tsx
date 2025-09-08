@@ -1,12 +1,13 @@
 import ProtectedRoute from '@/components/auth/protected-route';
 import BannerTable from './banners-table';
 
-export default function Tables() {
+export default function BannersPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={['banner:read']}>
       <div className="space-y-6">
         <BannerTable />
       </div>
     </ProtectedRoute>
   );
 }
+

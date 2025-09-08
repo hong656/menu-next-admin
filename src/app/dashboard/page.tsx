@@ -468,7 +468,7 @@ export default function RestaurantDashboard() {
     const sortedOrders = [...orders].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return (
-        <ProtectedRoute>
+        <ProtectedRoute requiredPermissions={[]}>
             <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
                 <Toaster richColors position="top-right" />
                 

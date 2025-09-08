@@ -2,31 +2,42 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
+import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
+  requiredPermissions: string[];
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, loading } = useAuth();
+export default function ProtectedRoute({ children, requiredPermissions }: ProtectedRouteProps) {
+  const { isAuthenticated, permissions, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
+    if (loading) {
+      return; // Wait until authentication status is determined
     }
-  }, [isAuthenticated, loading, router]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
 
-  if (!isAuthenticated) {
+    const hasPermission = requiredPermissions.every(permission => permissions.includes(permission));
+
+    if (!hasPermission) {
+      toast.error('Access Denied', {
+        description: "You don't have permission to access this page.",
+      });
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, permissions, loading, requiredPermissions, router]);
+
+  const hasRequiredPermissions = requiredPermissions.every(p => permissions.includes(p));
+
+  if (loading || !isAuthenticated || !hasRequiredPermissions) {
+    // Render nothing or a loading spinner while checking permissions
     return null;
   }
 

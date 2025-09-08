@@ -3,7 +3,7 @@ import TablesTable from './tables-table';
 
 export default function Tables() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={['table:read']}>
       <div className="space-y-6">
         <TablesTable />
       </div>

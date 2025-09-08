@@ -3,7 +3,7 @@ import RolesTable from './role-table';
 
 export default function RolesPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={['role:read']}>
       <div className="space-y-6">
         <RolesTable/>
       </div>
